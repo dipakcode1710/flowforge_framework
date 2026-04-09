@@ -1,183 +1,235 @@
-# 🚀 FlowForge - Lightweight Java Framework
+# 🚀 FlowForge Framework – Usage Guide
 
-FlowForge is a lightweight Java backend framework inspired by Spring Boot, designed to make development faster with minimal configuration and simple APIs.
+FlowForge is a lightweight Java backend framework designed for fast API development with minimal setup and clean developer experience.
 
----
-
-## ✨ Features
-
-* ⚡ Embedded HTTP Server (no external server needed)
-* 🔀 Annotation-based routing (`@Get`, `@Post`)
-* 📦 JSON request & response support
-* 🧠 Reflection-based method invocation
-* 🧩 Simple and extensible architecture
-* 🚫 No complex configuration required
+This guide explains how to **use the framework**, not how it is built.
 
 ---
 
-## 📁 Project Structure
+# 📦 What FlowForge Provides
 
-```
-flowforge/
- ├── core/
- │    ├── annotations/
- │    ├── dispatcher/
- │    ├── server/
- │    └── context/
- ├── Flow.java
-example/
- ├── AppMain.java
- ├── UserController.java
- └── User.java
-```
+FlowForge handles everything automatically:
+
+* HTTP server startup
+* Routing of requests
+* JSON request/response handling
+* Dependency injection
+* Service management
+* Dynamic URL handling
 
 ---
 
-## 🚀 Getting Started
+# 🚀 How to Start a FlowForge Application
 
-### 1. Clone the repository
+1. Create a main application entry point
+2. Run the application
+3. Framework starts the server automatically
 
-```
-git clone <your-repo-url>
-cd flowforge
+Once started, the application is available on:
+
+```text
+http://localhost:8080
 ```
 
 ---
 
-### 2. Run the application
+# 🔀 Defining APIs
 
-Run the main class:
+FlowForge uses annotations to define endpoints.
 
-```
-example.AppMain
-```
+## GET APIs
 
----
+* Used for fetching data
+* Accessible via browser or API tools
 
-### 3. Open in browser
+Example usage:
 
-```
-http://localhost:8080/hello
-http://localhost:8080/user
-```
+* Access endpoints directly via URL
+* Returns plain text or JSON
 
 ---
 
-## 🧩 Example
+## POST APIs
 
-### Controller
+* Used for sending data to server
+* Accepts JSON input
+* Returns JSON response
 
-```java
-@Controller
-public class UserController {
+To call:
 
-    @Get("/hello")
-    public String hello() {
-        return "Hello from FlowForge!";
-    }
-
-    @Post("/save")
-    public String save(String body) {
-        return "Received: " + body;
-    }
-
-    @Get("/user")
-    public User getUser() {
-        return new User("Dipak", 25);
-    }
-}
-```
+* Use tools like Postman or curl
+* Set header: `Content-Type: application/json`
+* Send JSON body
 
 ---
 
-### Model
+# 📦 JSON Handling
 
-```java
-public class User {
-    public String name;
-    public int age;
+FlowForge automatically:
 
-    public User(String name, int age) {
-        this.name = name;
-        this.age = age;
-    }
-}
+* Converts request JSON → Java objects
+* Converts Java objects → JSON response
+
+### Behavior
+
+| Input        | Output               |
+| ------------ | -------------------- |
+| JSON request | Java object          |
+| Java object  | JSON response        |
+| Invalid JSON | Error response (400) |
+
+---
+
+# 🔗 Dynamic URLs (Path Variables)
+
+FlowForge supports dynamic routing using URL values.
+
+### Example usage
+
+```text
+/user/10
+/user/10/order/500
 ```
 
----
+### Behavior
 
-## 🧪 Testing APIs
-
-### GET request
-
-```
-http://localhost:8080/hello
-```
+* Values in URL are automatically extracted
+* Passed to API internally
+* Supports multiple values
 
 ---
 
-### POST request (using curl)
+# 🔢 Type Conversion
 
-```
-curl -X POST http://localhost:8080/save \
--H "Content-Type: application/json" \
--d '{"name":"Dipak"}'
-```
+FlowForge automatically converts URL values into correct types:
 
----
-
-## ⚙️ How It Works
-
-1. Server starts using built-in `HttpServer`
-2. Dispatcher scans controller annotations
-3. Routes are mapped (`GET:/path`, `POST:/path`)
-4. Incoming requests are matched and executed via reflection
-5. Responses are returned as String or JSON
+| URL Value | Type   |
+| --------- | ------ |
+| `10`      | int    |
+| `1000`    | long   |
+| `10.5`    | double |
+| text      | String |
 
 ---
 
-## 🔥 Current Capabilities
+# 🔌 Dependency Injection
 
-* ✅ GET & POST routing
-* ✅ JSON request body handling
-* ✅ Object → JSON response conversion
-* ✅ Basic framework structure
+FlowForge automatically manages dependencies.
 
----
+### Behavior
 
-## 🚧 Upcoming Features
-
-* 🔄 Auto controller scanning (no manual registration)
-* 🔌 Dependency Injection (`@Inject`)
-* ⚙️ Configuration system (properties / YAML)
-* 📦 Proper JSON handling using Jackson
-* 🧵 Middleware / Filters
-* 🧪 Validation support
+* Services are created automatically
+* Injected where required
+* No manual object creation needed
 
 ---
 
-## 🤝 Contributing
+# 🧩 Service Layer
 
-Contributions are welcome! Feel free to fork and improve the framework.
+Used to separate business logic.
 
----
+### Benefits
 
-## 📜 License
+* Cleaner code
+* Reusable logic
+* Better structure
 
-This project is open-source and available under the MIT License.
-
----
-
-## 💡 Inspiration
-
-Inspired by modern frameworks like Spring Boot, but focused on simplicity and developer experience.
+FlowForge automatically detects and manages services.
 
 ---
 
-## 👨‍💻 Author
+# 🔍 Auto Detection
+
+FlowForge automatically detects:
+
+* Controllers
+* Services
+
+No manual registration is required.
+
+---
+
+# 🌐 API Response Behavior
+
+| Scenario        | Response  |
+| --------------- | --------- |
+| Success         | 200 OK    |
+| Invalid JSON    | 400 Error |
+| Route not found | 404 Error |
+| Internal error  | 500 Error |
+
+---
+
+# 🧪 Testing APIs
+
+You can test APIs using:
+
+* Browser (for GET)
+* Postman
+* curl
+
+---
+
+# 📁 Project Setup Requirements
+
+To use FlowForge:
+
+* Add FlowForge library to project
+* Add Jackson dependencies
+* Create application and APIs
+
+No additional configuration is required.
+
+---
+
+# ⚡ Key Advantages
+
+* No configuration files required
+* Minimal setup
+* Fast API development
+* Clean architecture
+* Lightweight compared to traditional frameworks
+
+---
+
+# 🚧 Current Capabilities
+
+* Routing (GET/POST)
+* JSON handling
+* Dependency Injection
+* Service layer support
+* Path variables (multi + typed)
+* Embedded server
+
+---
+
+# 🔮 Upcoming Features
+
+* Query parameters support
+* Configuration system
+* Middleware support
+* Validation system
+* Advanced error handling
+
+---
+
+# 🎯 Summary
+
+FlowForge allows developers to:
+
+* Build APIs quickly
+* Avoid boilerplate code
+* Focus on business logic
+* Run applications instantly
+
+---
+
+# 👨‍💻 Author
 
 Dipak
 
 ---
 
-⭐ If you like this project, give it a star!
+# ⭐ Support
+
+If you find FlowForge useful, consider supporting the project.
