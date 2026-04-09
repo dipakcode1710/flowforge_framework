@@ -33,4 +33,9 @@ public class UserController {
     public String test() {
         return service.getMessage();
     }
+
+    @Get("/user/{id}/order/{orderId}")
+    public String getOrder(int id, int orderId) {
+        return "User: " + id + ", Order: " + orderId;
+    }
 }

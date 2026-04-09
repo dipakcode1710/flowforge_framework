@@ -42,7 +42,7 @@ public class Server {
                 Object controller = null;
                 Map<String, String> pathVars = null;
 
-                // 🔥 Match route (supports path variables)
+                // 🔥 Route matching (supports path variables)
                 for (String routeKey : routes.keySet()) {
 
                     String[] parts = routeKey.split(":", 2);
@@ -66,31 +66,39 @@ public class Server {
                     String requestBody = readRequestBody(exchange);
                     Object result;
 
-                    // 🔥 Handle parameters
-                    if (method.getParameterCount() == 1) {
+                    int paramCount = method.getParameterCount();
 
-                        Class<?> paramType = method.getParameterTypes()[0];
-                        Object arg;
+                    if (paramCount > 0) {
 
-                        // 🔥 Path variable takes priority
-                        if (pathVars != null && !pathVars.isEmpty()) {
-                            arg = pathVars.values().iterator().next();
+                        Class<?>[] paramTypes = method.getParameterTypes();
+                        Object[] args = new Object[paramCount];
+
+                        int i = 0;
+
+                        // 🔥 Path variables (multi support)
+                        if (pathVars != null && pathVars.size() == paramCount) {
+
+                            for (String value : pathVars.values()) {
+                                args[i] = convertType(value, paramTypes[i]);
+                                i++;
+                            }
+
                         } else {
+                            // 🔥 JSON body
                             try {
-                                arg = mapper.readValue(requestBody, paramType);
+                                args[0] = mapper.readValue(requestBody, paramTypes[0]);
                             } catch (Exception e) {
                                 response = mapper.writeValueAsString(
                                         Map.of("error", "Invalid JSON")
                                 );
                                 statusCode = 400;
                                 exchange.getResponseHeaders().add("Content-Type", "application/json");
-
                                 sendResponse(exchange, response, statusCode);
                                 return;
                             }
                         }
 
-                        result = method.invoke(controller, arg);
+                        result = method.invoke(controller, args);
 
                     } else {
                         result = method.invoke(controller);
@@ -131,7 +139,7 @@ public class Server {
         server.start();
     }
 
-    // 🔥 Path variable matcher
+    // 🔥 Match path with variables
     private static Map<String, String> matchPath(String routePath, String requestPath) {
 
         String[] routeParts = routePath.split("/");
@@ -156,6 +164,26 @@ public class Server {
         }
 
         return pathVars;
+    }
+
+    // 🔥 Type conversion
+    private static Object convertType(String value, Class<?> type) {
+
+        if (type == String.class) return value;
+
+        if (type == int.class || type == Integer.class) {
+            return Integer.parseInt(value);
+        }
+
+        if (type == long.class || type == Long.class) {
+            return Long.parseLong(value);
+        }
+
+        if (type == double.class || type == Double.class) {
+            return Double.parseDouble(value);
+        }
+
+        return value;
     }
 
     private static void sendResponse(HttpExchange exchange, String response, int statusCode) {
