@@ -17,9 +17,9 @@ public class Injector {
                 Class<?> type = field.getType();
 
                 try {
-
                     Object dependency;
 
+                    // 🔥 If already created → reuse
                     if (Context.contains(type)) {
                         dependency = Context.getBean(type);
                     } else {
