@@ -16,7 +16,6 @@ public class Server {
     private static final Map<String, Method> routes = new HashMap<>();
     private static final Map<String, Object> controllers = new HashMap<>();
 
-    // 🔥 Jackson mapper
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void addRoute(String httpMethod, String path, Method method, Object controller) {
@@ -34,38 +33,61 @@ public class Server {
             String path = exchange.getRequestURI().getPath();
             String httpMethod = exchange.getRequestMethod();
 
-            String key = httpMethod + ":" + path;
-
             String response = "";
+            int statusCode = 200;
 
             try {
 
-                if (routes.containsKey(key)) {
+                Method method = null;
+                Object controller = null;
+                Map<String, String> pathVars = null;
 
-                    Method method = routes.get(key);
-                    Object controller = controllers.get(key);
+                // 🔥 Match route (supports path variables)
+                for (String routeKey : routes.keySet()) {
+
+                    String[] parts = routeKey.split(":", 2);
+                    String routeMethod = parts[0];
+                    String routePath = parts[1];
+
+                    if (!routeMethod.equals(httpMethod)) continue;
+
+                    Map<String, String> vars = matchPath(routePath, path);
+
+                    if (vars != null) {
+                        method = routes.get(routeKey);
+                        controller = controllers.get(routeKey);
+                        pathVars = vars;
+                        break;
+                    }
+                }
+
+                if (method != null) {
 
                     String requestBody = readRequestBody(exchange);
-
                     Object result;
 
-                    // 🔥 Handle request body (JSON → Java)
+                    // 🔥 Handle parameters
                     if (method.getParameterCount() == 1) {
 
                         Class<?> paramType = method.getParameterTypes()[0];
-
                         Object arg;
 
-                        try {
-                            arg = mapper.readValue(requestBody, paramType);
-                        } catch (Exception e) {
-                            String errorJson = "{\"error\":\"Invalid JSON\"}";
+                        // 🔥 Path variable takes priority
+                        if (pathVars != null && !pathVars.isEmpty()) {
+                            arg = pathVars.values().iterator().next();
+                        } else {
+                            try {
+                                arg = mapper.readValue(requestBody, paramType);
+                            } catch (Exception e) {
+                                response = mapper.writeValueAsString(
+                                        Map.of("error", "Invalid JSON")
+                                );
+                                statusCode = 400;
+                                exchange.getResponseHeaders().add("Content-Type", "application/json");
 
-                            exchange.getResponseHeaders().add("Content-Type", "application/json");
-                            exchange.sendResponseHeaders(400, errorJson.length());
-                            exchange.getResponseBody().write(errorJson.getBytes());
-                            exchange.getResponseBody().close();
-                            return;
+                                sendResponse(exchange, response, statusCode);
+                                return;
+                            }
                         }
 
                         result = method.invoke(controller, arg);
@@ -74,7 +96,7 @@ public class Server {
                         result = method.invoke(controller);
                     }
 
-                    // 🔥 Handle response
+                    // 🔥 Response handling
                     if (result instanceof String) {
                         response = (String) result;
                         exchange.getResponseHeaders().add("Content-Type", "text/plain");
@@ -85,23 +107,66 @@ public class Server {
 
                 } else {
                     response = "404 Not Found";
+                    statusCode = 404;
                     exchange.getResponseHeaders().add("Content-Type", "text/plain");
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
-                response = "500 Internal Server Error";
+
+                try {
+                    response = mapper.writeValueAsString(
+                            Map.of("error", "Internal Server Error")
+                    );
+                } catch (Exception ignored) {}
+
+                statusCode = 500;
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
             }
 
-            exchange.sendResponseHeaders(200, response.getBytes().length);
-
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            sendResponse(exchange, response, statusCode);
         });
 
         System.out.println("Server started on port " + port);
         server.start();
+    }
+
+    // 🔥 Path variable matcher
+    private static Map<String, String> matchPath(String routePath, String requestPath) {
+
+        String[] routeParts = routePath.split("/");
+        String[] requestParts = requestPath.split("/");
+
+        if (routeParts.length != requestParts.length) {
+            return null;
+        }
+
+        Map<String, String> pathVars = new HashMap<>();
+
+        for (int i = 0; i < routeParts.length; i++) {
+
+            if (routeParts[i].startsWith("{") && routeParts[i].endsWith("}")) {
+
+                String varName = routeParts[i].substring(1, routeParts[i].length() - 1);
+                pathVars.put(varName, requestParts[i]);
+
+            } else if (!routeParts[i].equals(requestParts[i])) {
+                return null;
+            }
+        }
+
+        return pathVars;
+    }
+
+    private static void sendResponse(HttpExchange exchange, String response, int statusCode) {
+        try {
+            exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static String readRequestBody(HttpExchange exchange) {

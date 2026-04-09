@@ -13,7 +13,6 @@ public class UserController {
         return "Hello Dipak!";
     }
 
-    // 🔥 JSON request + response
     @Post("/save")
     public User save(User user) {
         return user;
@@ -22,6 +21,12 @@ public class UserController {
     @Get("/user")
     public User getUser() {
         return new User("Dipak", 25);
+    }
+
+    // 🔥 NEW: path variable
+    @Get("/user/{id}")
+    public User getUserById(String id) {
+        return new User("User-" + id, 25);
     }
 
     @Get("/test")
