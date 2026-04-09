@@ -7,11 +7,15 @@ public class Context {
 
     private static final Map<Class<?>, Object> beans = new HashMap<>();
 
-    public static void register(Class<?> clazz) throws Exception {
-        beans.put(clazz, clazz.getDeclaredConstructor().newInstance());
+    public static void addBean(Class<?> clazz, Object instance) {
+        beans.put(clazz, instance);
     }
 
-    public static <T> T get(Class<T> clazz) {
+    public static <T> T getBean(Class<T> clazz) {
         return (T) beans.get(clazz);
+    }
+
+    public static boolean contains(Class<?> clazz) {
+        return beans.containsKey(clazz);
     }
 }
