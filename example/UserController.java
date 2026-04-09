@@ -7,25 +7,25 @@ public class UserController {
 
     @Inject
     UserService service;
-    
+
     @Get("/hello")
     public String hello() {
         return "Hello Dipak!";
     }
 
+    // 🔥 JSON request + response
     @Post("/save")
-    public String save(String body) {
-        return "Received: " + body;
+    public User save(User user) {
+        return user;
     }
 
-    // ✅ ADD THIS HERE
     @Get("/user")
     public User getUser() {
         return new User("Dipak", 25);
     }
-    
+
     @Get("/test")
     public String test() {
         return service.getMessage();
-    }    
+    }
 }
