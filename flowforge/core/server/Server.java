@@ -4,9 +4,12 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import flowforge.core.annotations.PathVariable;
+
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +45,7 @@ public class Server {
                 Object controller = null;
                 Map<String, String> pathVars = null;
 
-                // 🔥 Route matching (supports path variables)
+                // 🔥 Route matching
                 for (String routeKey : routes.keySet()) {
 
                     String[] parts = routeKey.split(":", 2);
@@ -70,31 +73,37 @@ public class Server {
 
                     if (paramCount > 0) {
 
-                        Class<?>[] paramTypes = method.getParameterTypes();
+                        Parameter[] parameters = method.getParameters();
                         Object[] args = new Object[paramCount];
 
-                        int i = 0;
+                        for (int i = 0; i < paramCount; i++) {
 
-                        // 🔥 Path variables (multi support)
-                        if (pathVars != null && pathVars.size() == paramCount) {
+                            Parameter param = parameters[i];
+                            Class<?> type = param.getType();
 
-                            for (String value : pathVars.values()) {
-                                args[i] = convertType(value, paramTypes[i]);
-                                i++;
-                            }
+                            // 🔥 Handle @PathVariable
+                            if (param.isAnnotationPresent(PathVariable.class)) {
 
-                        } else {
-                            // 🔥 JSON body
-                            try {
-                                args[0] = mapper.readValue(requestBody, paramTypes[0]);
-                            } catch (Exception e) {
-                                response = mapper.writeValueAsString(
-                                        Map.of("error", "Invalid JSON")
-                                );
-                                statusCode = 400;
-                                exchange.getResponseHeaders().add("Content-Type", "application/json");
-                                sendResponse(exchange, response, statusCode);
-                                return;
+                                PathVariable pv = param.getAnnotation(PathVariable.class);
+                                String name = pv.value();
+
+                                String value = pathVars.get(name);
+
+                                args[i] = convertType(value, type);
+
+                            } else {
+                                // 🔥 JSON fallback
+                                try {
+                                    args[i] = mapper.readValue(requestBody, type);
+                                } catch (Exception e) {
+                                    response = mapper.writeValueAsString(
+                                            Map.of("error", "Invalid JSON")
+                                    );
+                                    statusCode = 400;
+                                    exchange.getResponseHeaders().add("Content-Type", "application/json");
+                                    sendResponse(exchange, response, statusCode);
+                                    return;
+                                }
                             }
                         }
 
@@ -139,7 +148,7 @@ public class Server {
         server.start();
     }
 
-    // 🔥 Match path with variables
+    // 🔥 Match path variables
     private static Map<String, String> matchPath(String routePath, String requestPath) {
 
         String[] routeParts = routePath.split("/");

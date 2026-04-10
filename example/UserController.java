@@ -5,37 +5,16 @@ import flowforge.core.annotations.*;
 @Controller
 public class UserController {
 
-    @Inject
-    UserService service;
-
-    @Get("/hello")
-    public String hello() {
-        return "Hello Dipak!";
-    }
-
-    @Post("/save")
-    public User save(User user) {
-        return user;
-    }
-
-    @Get("/user")
-    public User getUser() {
-        return new User("Dipak", 25);
-    }
-
-    // 🔥 NEW: path variable
     @Get("/user/{id}")
-    public User getUserById(String id) {
-        return new User("User-" + id, 25);
-    }
-
-    @Get("/test")
-    public String test() {
-        return service.getMessage();
+    public String getUser(@PathVariable("id") int id) {
+        return "User ID: " + id;
     }
 
     @Get("/user/{id}/order/{orderId}")
-    public String getOrder(int id, int orderId) {
+    public String getOrder(
+            @PathVariable("id") int id,
+            @PathVariable("orderId") int orderId) {
+
         return "User: " + id + ", Order: " + orderId;
     }
 }
