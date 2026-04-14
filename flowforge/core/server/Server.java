@@ -1,18 +1,20 @@
 package flowforge.core.server;
+import flowforge.core.annotations.Auth;
+import flowforge.core.middleware.AuthMiddleware;
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import flowforge.core.annotations.PathVariable;
+import flowforge.core.annotations.*;
+import flowforge.core.middleware.*;
 
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Server {
 
@@ -35,6 +37,9 @@ public class Server {
 
             String path = exchange.getRequestURI().getPath();
             String httpMethod = exchange.getRequestMethod();
+            String query = exchange.getRequestURI().getQuery();
+
+            Map<String, String> queryParams = parseQuery(query);
 
             String response = "";
             int statusCode = 200;
@@ -67,53 +72,46 @@ public class Server {
                 if (method != null) {
 
                     String requestBody = readRequestBody(exchange);
-                    Object result;
+                    RequestContext ctx = new RequestContext(exchange, pathVars, requestBody);
 
-                    int paramCount = method.getParameterCount();
+                    // 🔥 Middleware
+                    List<Middleware> middlewareList = new ArrayList<>();
+                    
+                 // 🔥 Auto attach AuthMiddleware if @Auth present
+                    if (method.isAnnotationPresent(Auth.class) ||
+                    	    controller.getClass().isAnnotationPresent(Auth.class)) {
 
-                    if (paramCount > 0) {
+                    	    Auth auth = method.isAnnotationPresent(Auth.class)
+                    	            ? method.getAnnotation(Auth.class)
+                    	            : controller.getClass().getAnnotation(Auth.class);
 
-                        Parameter[] parameters = method.getParameters();
-                        Object[] args = new Object[paramCount];
+                    	    middlewareList.add(new AuthMiddleware(auth.role()));
+                    	}                    
 
-                        for (int i = 0; i < paramCount; i++) {
-
-                            Parameter param = parameters[i];
-                            Class<?> type = param.getType();
-
-                            // 🔥 Handle @PathVariable
-                            if (param.isAnnotationPresent(PathVariable.class)) {
-
-                                PathVariable pv = param.getAnnotation(PathVariable.class);
-                                String name = pv.value();
-
-                                String value = pathVars.get(name);
-
-                                args[i] = convertType(value, type);
-
-                            } else {
-                                // 🔥 JSON fallback
-                                try {
-                                    args[i] = mapper.readValue(requestBody, type);
-                                } catch (Exception e) {
-                                    response = mapper.writeValueAsString(
-                                            Map.of("error", "Invalid JSON")
-                                    );
-                                    statusCode = 400;
-                                    exchange.getResponseHeaders().add("Content-Type", "application/json");
-                                    sendResponse(exchange, response, statusCode);
-                                    return;
-                                }
-                            }
-                        }
-
-                        result = method.invoke(controller, args);
-
-                    } else {
-                        result = method.invoke(controller);
+                    if (method.isAnnotationPresent(Before.class)) {
+                        middlewareList.add(createMiddleware(method.getAnnotation(Before.class).value()));
+                    }
+                    if (method.isAnnotationPresent(After.class)) {
+                        middlewareList.add(createMiddleware(method.getAnnotation(After.class).value()));
+                    }
+                    if (method.isAnnotationPresent(Around.class)) {
+                        middlewareList.add(createMiddleware(method.getAnnotation(Around.class).value()));
                     }
 
-                    // 🔥 Response handling
+                    final Method finalMethod = method;
+                    final Object finalController = controller;
+
+                    MiddlewareChain chain = new MiddlewareChain(middlewareList, (context) -> {
+                        return invokeController(finalMethod, finalController, context, queryParams);
+                    });
+
+                    Object result = chain.proceed(ctx);
+
+                    if (ctx.handled) {
+                        return; // 🔥 STOP everything
+                    }
+                    
+                    // 🔥 Response
                     if (result instanceof String) {
                         response = (String) result;
                         exchange.getResponseHeaders().add("Content-Type", "text/plain");
@@ -133,7 +131,7 @@ public class Server {
 
                 try {
                     response = mapper.writeValueAsString(
-                            Map.of("error", "Internal Server Error")
+                            Map.of("error", e.getMessage())
                     );
                 } catch (Exception ignored) {}
 
@@ -148,25 +146,101 @@ public class Server {
         server.start();
     }
 
-    // 🔥 Match path variables
+    // 🔥 Controller invocation
+    private static Object invokeController(
+            Method method,
+            Object controller,
+            RequestContext ctx,
+            Map<String, String> queryParams) throws Exception {
+
+        int paramCount = method.getParameterCount();
+
+        if (paramCount > 0) {
+
+            Parameter[] parameters = method.getParameters();
+            Object[] args = new Object[paramCount];
+
+            for (int i = 0; i < paramCount; i++) {
+
+                Parameter param = parameters[i];
+                Class<?> type = param.getType();
+
+                // 🔥 PathVariable
+                if (param.isAnnotationPresent(PathVariable.class)) {
+
+                    PathVariable pv = param.getAnnotation(PathVariable.class);
+                    String value = ctx.pathVars.get(pv.value());
+
+                    args[i] = convertType(value, type);
+
+                }
+                // 🔥 QueryParam (with required support)
+                else if (param.isAnnotationPresent(QueryParam.class)) {
+
+                    QueryParam qp = param.getAnnotation(QueryParam.class);
+                    String value = queryParams.get(qp.value());
+
+                    if (value == null) {
+                        if (qp.required()) {
+                            throw new RuntimeException("Missing query param: " + qp.value());
+                        } else {
+                            args[i] = null;
+                        }
+                    } else {
+                        args[i] = convertType(value, type);
+                    }
+                }
+                // 🔥 JSON body
+                else {
+                    args[i] = mapper.readValue(ctx.body, type);
+                }
+            }
+
+            return method.invoke(controller, args);
+
+        } else {
+            return method.invoke(controller);
+        }
+    }
+
+    // 🔥 Query parser
+    private static Map<String, String> parseQuery(String query) {
+
+        Map<String, String> map = new HashMap<>();
+
+        if (query == null || query.isEmpty()) return map;
+
+        String[] pairs = query.split("&");
+
+        for (String pair : pairs) {
+            String[] kv = pair.split("=");
+
+            if (kv.length == 2) {
+                map.put(kv[0], kv[1]);
+            }
+        }
+
+        return map;
+    }
+
+    private static Middleware createMiddleware(Class<?> clazz) throws Exception {
+        return (Middleware) clazz.getDeclaredConstructor().newInstance();
+    }
+
     private static Map<String, String> matchPath(String routePath, String requestPath) {
 
         String[] routeParts = routePath.split("/");
         String[] requestParts = requestPath.split("/");
 
-        if (routeParts.length != requestParts.length) {
-            return null;
-        }
+        if (routeParts.length != requestParts.length) return null;
 
         Map<String, String> pathVars = new HashMap<>();
 
         for (int i = 0; i < routeParts.length; i++) {
 
             if (routeParts[i].startsWith("{") && routeParts[i].endsWith("}")) {
-
                 String varName = routeParts[i].substring(1, routeParts[i].length() - 1);
                 pathVars.put(varName, requestParts[i]);
-
             } else if (!routeParts[i].equals(requestParts[i])) {
                 return null;
             }
@@ -175,22 +249,21 @@ public class Server {
         return pathVars;
     }
 
-    // 🔥 Type conversion
     private static Object convertType(String value, Class<?> type) {
 
+        if (value == null || value.isEmpty()) {
+
+            if (type == int.class || type == Integer.class) return 0;
+            if (type == long.class || type == Long.class) return 0L;
+            if (type == double.class || type == Double.class) return 0.0;
+
+            return null;
+        }
+
         if (type == String.class) return value;
-
-        if (type == int.class || type == Integer.class) {
-            return Integer.parseInt(value);
-        }
-
-        if (type == long.class || type == Long.class) {
-            return Long.parseLong(value);
-        }
-
-        if (type == double.class || type == Double.class) {
-            return Double.parseDouble(value);
-        }
+        if (type == int.class || type == Integer.class) return Integer.parseInt(value);
+        if (type == long.class || type == Long.class) return Long.parseLong(value);
+        if (type == double.class || type == Double.class) return Double.parseDouble(value);
 
         return value;
     }
