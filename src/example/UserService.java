@@ -4,7 +4,7 @@ import flowforge.core.annotations.Value;
 
 public class UserService {
 
-    @Value("app.name")
+    @Value(value = "app.name", defaultValue = "DefaultApp")
     private String appName;
 
     public String getAppName() {

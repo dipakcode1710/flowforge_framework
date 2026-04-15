@@ -19,7 +19,7 @@ public class Injector {
             try {
 
                 // =========================
-                // 🔥 1. @Inject (existing)
+                // 🔥 1. @Inject
                 // =========================
                 if (field.isAnnotationPresent(Inject.class)) {
 
@@ -40,14 +40,19 @@ public class Injector {
                 }
 
                 // =========================
-                // 🔥 2. @Value (NEW FEATURE)
+                // 🔥 2. @Value with default support
                 // =========================
                 if (field.isAnnotationPresent(Value.class)) {
 
                     Value val = field.getAnnotation(Value.class);
-                    String key = val.value();
 
+                    String key = val.value();
                     String configValue = Config.get(key);
+
+                    // 🔥 NEW: default value support
+                    if (configValue == null || configValue.isEmpty()) {
+                        configValue = val.defaultValue();
+                    }
 
                     Object converted = convert(field.getType(), configValue);
 
