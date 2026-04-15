@@ -9,21 +9,53 @@ public class Config {
 
     static {
         try {
-            InputStream is = Config.class
-                    .getClassLoader()
-                    .getResourceAsStream("app.properties");
+            // 🔥 1. Load base config
+            loadFile("app.properties");
 
-            if (is != null) {
-                props.load(is);
-                System.out.println("✅ Loaded app.properties");
-            } else {
-                System.out.println("⚠️ app.properties not found");
+            System.out.println("✅ Loaded app.properties");
+
+            // 🔥 2. Check environment
+            String env = props.getProperty("app.env");
+
+            if (env != null && !env.isEmpty()) {
+
+                String envFile = "app-" + env + ".properties";
+
+                loadFile(envFile);
+
+                System.out.println("✅ Loaded " + envFile);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private static void loadFile(String filename) {
+
+        try {
+            InputStream is = Config.class
+                    .getClassLoader()
+                    .getResourceAsStream(filename);
+
+            if (is != null) {
+                Properties temp = new Properties();
+                temp.load(is);
+
+                // 🔥 Override existing values
+                props.putAll(temp);
+            } else {
+                System.out.println("⚠️ " + filename + " not found");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // =========================
+    // 🔥 Getters
+    // =========================
 
     public static String get(String key) {
         return props.getProperty(key);

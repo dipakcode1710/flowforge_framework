@@ -5,6 +5,9 @@ import flowforge.core.annotations.*;
 @Auth
 @Controller
 public class UserController {
+	
+    @Inject
+    private UserService service;
 
     /*@Get("/user/{id}")
     public String getUser(@PathVariable("id") int id) {
@@ -66,4 +69,10 @@ public class UserController {
     public String test(@QueryParam("id") @NotNull @Min(5) Integer id) {
         return "ID: " + id;
     }
+    
+
+    @Get("/app")
+    public String app() {
+        return "App: " + service.getAppName();
+    }    
 }
