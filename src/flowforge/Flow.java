@@ -6,6 +6,7 @@ import flowforge.core.context.Injector;
 import flowforge.core.dispatcher.Dispatcher;
 import flowforge.core.scanner.ClassScanner;
 import flowforge.core.server.Server;
+import flowforge.core.config.Config;
 
 import java.util.List;
 
@@ -40,7 +41,9 @@ public class Flow {
                 }
             }
 
-            Server.start(8080);
+            // 🔥 Use config instead of hardcoded port
+            int port = Config.getInt("server.port", 8080);
+            Server.start(port);
 
         } catch (Exception e) {
             e.printStackTrace();

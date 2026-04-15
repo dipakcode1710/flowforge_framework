@@ -3,6 +3,7 @@ package flowforge.core.server;
 import flowforge.core.annotations.*;
 import flowforge.core.middleware.*;
 import flowforge.core.validation.Validator;
+import flowforge.core.config.Config;
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
@@ -32,7 +33,6 @@ public class Server {
         controllers.put(key, controller);
     }
 
-    // 🔥 Register ExceptionHandler
     public static void registerExceptionHandler(Method method, Object controller) {
         exceptionHandlerMethod = method;
         exceptionHandlerInstance = controller;
@@ -86,9 +86,12 @@ public class Server {
                     // 🔥 Middleware
                     List<Middleware> middlewareList = new ArrayList<>();
 
-                    // 🔐 Auth middleware
-                    if (method.isAnnotationPresent(Auth.class) ||
-                        controller.getClass().isAnnotationPresent(Auth.class)) {
+                    // 🔐 Auth toggle via config
+                    boolean authEnabled = Config.getBoolean("auth.enabled", true);
+
+                    if (authEnabled &&
+                        (method.isAnnotationPresent(Auth.class) ||
+                         controller.getClass().isAnnotationPresent(Auth.class))) {
 
                         Auth auth = method.isAnnotationPresent(Auth.class)
                                 ? method.getAnnotation(Auth.class)
@@ -117,7 +120,6 @@ public class Server {
 
                     Object result = chain.proceed(ctx);
 
-                    // 🔥 Middleware stopped response
                     if (ctx.handled) return;
 
                     // 🔥 Response
@@ -140,7 +142,6 @@ public class Server {
                 e.printStackTrace();
 
                 try {
-                    // 🔥 Use ExceptionHandler
                     if (exceptionHandlerMethod != null) {
 
                         Object result = exceptionHandlerMethod.invoke(
@@ -183,60 +184,53 @@ public class Server {
             RequestContext ctx,
             Map<String, String> queryParams) throws Exception {
 
-        int paramCount = method.getParameterCount();
+        Parameter[] parameters = method.getParameters();
+        Object[] args = new Object[parameters.length];
 
-        if (paramCount > 0) {
+        for (int i = 0; i < parameters.length; i++) {
 
-            Parameter[] parameters = method.getParameters();
-            Object[] args = new Object[paramCount];
+            Parameter param = parameters[i];
+            Class<?> type = param.getType();
+            Object value;
 
-            for (int i = 0; i < paramCount; i++) {
+            if (param.isAnnotationPresent(PathVariable.class)) {
 
-                Parameter param = parameters[i];
-                Class<?> type = param.getType();
+                PathVariable pv = param.getAnnotation(PathVariable.class);
+                value = convertType(ctx.pathVars.get(pv.value()), type);
 
-                Object value;
+            } else if (param.isAnnotationPresent(QueryParam.class)) {
 
-                // 🔥 PathVariable
-                if (param.isAnnotationPresent(PathVariable.class)) {
+                QueryParam qp = param.getAnnotation(QueryParam.class);
+                String raw = queryParams.get(qp.value());
 
-                    PathVariable pv = param.getAnnotation(PathVariable.class);
-                    value = convertType(ctx.pathVars.get(pv.value()), type);
-
-                }
-                // 🔥 QueryParam
-                else if (param.isAnnotationPresent(QueryParam.class)) {
-
-                    QueryParam qp = param.getAnnotation(QueryParam.class);
-                    String raw = queryParams.get(qp.value());
-
-                    if (raw == null && qp.required()) {
-                        throw new RuntimeException("Missing query param: " + qp.value());
-                    }
-
-                    value = convertType(raw, type);
-                }
-                // 🔥 JSON body
-                else {
-
-                    if (ctx.body == null || ctx.body.isEmpty()) {
-                        throw new RuntimeException("Missing request body");
-                    }
-
-                    value = mapper.readValue(ctx.body, type);
+                if (raw == null && qp.required()) {
+                    throw new RuntimeException("Missing query param: " + qp.value());
                 }
 
-                // 🔥 VALIDATION
-                Validator.validate(param, value);
+                value = convertType(raw, type);
 
-                args[i] = value;
+            } else {
+
+                if ("GET".equalsIgnoreCase(ctx.getMethod())) {
+                    throw new RuntimeException(
+                        "Missing @QueryParam or @PathVariable for parameter: " + param.getName()
+                    );
+                }
+
+                if (ctx.body == null || ctx.body.isEmpty()) {
+                    throw new RuntimeException("Missing request body");
+                }
+
+                value = mapper.readValue(ctx.body, type);
             }
 
-            return method.invoke(controller, args);
+            // 🔥 VALIDATION
+            Validator.validate(param, value);
 
-        } else {
-            return method.invoke(controller);
+            args[i] = value;
         }
+
+        return method.invoke(controller, args);
     }
 
     private static Map<String, String> parseQuery(String query) {
@@ -301,7 +295,8 @@ public class Server {
 
     private static String readRequestBody(HttpExchange exchange) {
         try {
-            return new String(exchange.getRequestBody().readAllBytes());
+            InputStream is = exchange.getRequestBody();
+            return new String(is.readAllBytes());
         } catch (Exception e) {
             return "";
         }
