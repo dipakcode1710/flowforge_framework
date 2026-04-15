@@ -3,12 +3,15 @@ package flowforge.core.context;
 import flowforge.core.annotations.Inject;
 import flowforge.core.annotations.Value;
 import flowforge.core.config.Config;
+import flowforge.core.config.ConfigBinder;
 
 import java.lang.reflect.Field;
 
 public class Injector {
 
     public static void inject(Object obj) {
+
+        System.out.println("🚀 [Injector] Processing: " + obj.getClass().getName());
 
         Field[] fields = obj.getClass().getDeclaredFields();
 
@@ -24,23 +27,39 @@ public class Injector {
                 if (field.isAnnotationPresent(Inject.class)) {
 
                     Class<?> type = field.getType();
-                    Object dependency;
 
-                    if (Context.contains(type)) {
-                        dependency = Context.getBean(type);
-                    } else {
+                    System.out.println("👉 [Injector] Trying to inject: " + type.getName());
+
+                    Object dependency = Context.getBean(type);
+
+                    if (dependency == null) {
+
+                        System.out.println("❌ [Injector] Bean NOT found, creating: " + type.getName());
+
                         dependency = type.getDeclaredConstructor().newInstance();
+
                         Context.addBean(type, dependency);
 
-                        // 🔥 IMPORTANT: inject nested dependencies
+                        System.out.println("✅ [Injector] Bean registered: " + type.getName());
+
+                        // 🔥 Inject recursively
                         inject(dependency);
+
+                        // 🔥 Bind config
+                        ConfigBinder.bind(dependency);
+
+                    } else {
+                        System.out.println("✅ [Injector] Bean found: " + type.getName());
                     }
 
                     field.set(obj, dependency);
+
+                    System.out.println("🔥 [Injector] Injected " + type.getName() +
+                            " into " + obj.getClass().getName());
                 }
 
                 // =========================
-                // 🔥 2. @Value with default support
+                // 🔥 2. @Value
                 // =========================
                 if (field.isAnnotationPresent(Value.class)) {
 
@@ -49,7 +68,6 @@ public class Injector {
                     String key = val.value();
                     String configValue = Config.get(key);
 
-                    // 🔥 NEW: default value support
                     if (configValue == null || configValue.isEmpty()) {
                         configValue = val.defaultValue();
                     }
@@ -57,17 +75,23 @@ public class Injector {
                     Object converted = convert(field.getType(), configValue);
 
                     field.set(obj, converted);
+
+                    System.out.println("⚙️ [Injector] @Value injected: " + key + " = " + converted);
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+
+        // =========================
+        // 🔥 Final config binding
+        // =========================
+        ConfigBinder.bind(obj);
+
+        System.out.println("✅ [Injector] Completed: " + obj.getClass().getName());
     }
 
-    // =========================
-    // 🔥 Type conversion
-    // =========================
     private static Object convert(Class<?> type, String value) {
 
         if (value == null) return null;
@@ -90,7 +114,6 @@ public class Injector {
                 return Boolean.parseBoolean(value);
             }
 
-            // default → String
             return value;
 
         } catch (Exception e) {

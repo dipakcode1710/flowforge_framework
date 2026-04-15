@@ -41,8 +41,9 @@ public class Flow {
                 }
             }
 
-            // 🔥 Use config instead of hardcoded port
+            // 🔥 Use config port
             int port = Config.getInt("server.port", 8080);
+
             Server.start(port);
 
         } catch (Exception e) {

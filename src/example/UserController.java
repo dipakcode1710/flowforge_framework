@@ -8,6 +8,8 @@ public class UserController {
 	
     @Inject
     private UserService service;
+    @Inject
+    private ServerConfig config;   // ✅ FIXED    
 
     /*@Get("/user/{id}")
     public String getUser(@PathVariable("id") int id) {
@@ -74,5 +76,10 @@ public class UserController {
     @Get("/app")
     public String app() {
         return "App: " + service.getAppName();
+    } 
+    
+    @Get("/server")
+    public String server() {
+        return "Port: " + config.port + ", Name: " + config.name;
     }    
 }
