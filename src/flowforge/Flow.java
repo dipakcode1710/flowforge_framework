@@ -1,12 +1,14 @@
 package flowforge;
 
 import flowforge.core.annotations.Controller;
+import flowforge.core.annotations.Service;
 import flowforge.core.context.Context;
 import flowforge.core.context.Injector;
 import flowforge.core.dispatcher.Dispatcher;
 import flowforge.core.scanner.ClassScanner;
 import flowforge.core.server.Server;
 import flowforge.core.config.Config;
+import flowforge.core.annotations.ConfigurationProperties;
 
 import java.util.List;
 
@@ -22,26 +24,56 @@ public class Flow {
 
             List<Class<?>> classes = ClassScanner.scan(basePackage);
 
+            // =========================
+            // 🔥 1. Register beans
+            // =========================
+            for (Class<?> clazz : classes) {
+
+                if (
+                        clazz.isAnnotationPresent(Controller.class) ||
+                        clazz.isAnnotationPresent(Service.class) ||
+                        clazz.isAnnotationPresent(ConfigurationProperties.class)
+                ) {
+
+                    Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                    Context.addBean(clazz, instance);
+
+                    System.out.println("📦 Registered Bean: " + clazz.getName());
+                }
+            }
+
+            // =========================
+            // 🔥 2. Inject dependencies
+            // =========================
+            for (Class<?> clazz : classes) {
+
+                if (Context.contains(clazz)) {
+
+                    Object bean = Context.getBean(clazz);
+
+                    Injector.inject(bean);
+                }
+            }
+
+            // =========================
+            // 🔥 3. Register routes
+            // =========================
             for (Class<?> clazz : classes) {
 
                 if (clazz.isAnnotationPresent(Controller.class)) {
 
-                    Object controller = clazz.getDeclaredConstructor().newInstance();
+                    Object controller = Context.getBean(clazz);
 
-                    // 🔥 Register bean
-                    Context.addBean(clazz, controller);
-
-                    // 🔥 Inject dependencies
-                    Injector.inject(controller);
-
-                    // 🔥 Register routes
                     Dispatcher.register(controller);
 
-                    System.out.println("Registered Controller: " + clazz.getName());
+                    System.out.println("🚀 Controller Ready: " + clazz.getName());
                 }
             }
 
-            // 🔥 Use config port
+            // =========================
+            // 🔥 4. Start server
+            // =========================
             int port = Config.getInt("server.port", 8080);
 
             Server.start(port);

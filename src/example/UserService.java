@@ -1,7 +1,9 @@
 package example;
 
+import flowforge.core.annotations.Service;
 import flowforge.core.annotations.Value;
 
+@Service
 public class UserService {
 
     @Value(value = "app.name", defaultValue = "DefaultApp")
