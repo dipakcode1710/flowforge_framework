@@ -21,7 +21,8 @@ public class UserController {
 	
     //@Before(LogMiddleware.class)
     //@Around(TimeMiddleware.class)
-    //@After(LogMiddleware.class)   
+    //@After(LogMiddleware.class)
+	/*
     @Get("/test")
     public String test() {
         return "Middleware Working 🔥";
@@ -31,13 +32,13 @@ public class UserController {
         return "User ID: " + id;
     } 
 
-    /*
-     * @Auth
+    */
+    @Auth
     @Get("/secure")
     public String secure() {
         return "Protected Data 🔒";
     }
-    */
+    
     @Get("/secure1")
     public String a() {
         return "A";
@@ -58,5 +59,11 @@ public class UserController {
     @Get("/admin")
     public String admin() {
         return "Admin API 🔒";
-    }    
+    }
+    
+    
+    @Get("/test")
+    public String test(@QueryParam("id") @NotNull @Min(5) Integer id) {
+        return "ID: " + id;
+    }
 }
