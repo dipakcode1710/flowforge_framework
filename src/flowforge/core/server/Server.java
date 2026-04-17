@@ -21,16 +21,11 @@ public class Server {
     private static final Map<String, Method> routeMethods = new HashMap<>();
     private static final Map<String, Object> controllers = new HashMap<>();
 
-    // 🔥 Dev dashboard storage
+    // 🔥 Dev dashboard
     private static final List<RouteInfo> routeList = new ArrayList<>();
-
-    private static Method exceptionHandlerMethod = null;
-    private static Object exceptionHandlerInstance = null;
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    // =========================
-    // 🔥 Route Info
     // =========================
     public static class RouteInfo {
         public String method;
@@ -45,7 +40,7 @@ public class Server {
     }
 
     // =========================
-    // 🔥 Add Route
+    // 🔥 Register route
     // =========================
     public static void addRoute(String httpMethod, String path, Method method, Object controller) {
 
@@ -54,7 +49,6 @@ public class Server {
         routeMethods.put(key, method);
         controllers.put(key, controller);
 
-        // 🔥 Store for dev dashboard
         routeList.add(new RouteInfo(
                 httpMethod,
                 path,
@@ -62,11 +56,6 @@ public class Server {
         ));
 
         System.out.println("Mapped " + httpMethod + ": " + path);
-    }
-
-    public static void registerExceptionHandler(Method method, Object controller) {
-        exceptionHandlerMethod = method;
-        exceptionHandlerInstance = controller;
     }
 
     // =========================
@@ -80,8 +69,6 @@ public class Server {
         // 🔥 DEV DASHBOARD (IMPORTANT: BEFORE "/")
         // =========================
         server.createContext("/dev/routes", exchange -> {
-
-            System.out.println("🔥 DEV ROUTES HIT");
 
             if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 exchange.sendResponseHeaders(405, -1);
@@ -100,7 +87,7 @@ public class Server {
         // =========================
         // 🔥 MAIN ROUTER
         // =========================
-        server.createContext("/", (HttpExchange exchange) -> {
+        server.createContext("/", exchange -> {
 
             String path = exchange.getRequestURI().getPath();
             String httpMethod = exchange.getRequestMethod();
@@ -136,50 +123,49 @@ public class Server {
                     }
                 }
 
-                if (method != null) {
+                if (method == null) {
+                    sendSafe(exchange, "404 Not Found", 404);
+                    return;
+                }
 
-                    String requestBody = readRequestBody(exchange);
-                    RequestContext ctx = new RequestContext(exchange, pathVars, requestBody);
+                String requestBody = readBody(exchange);
+                RequestContext ctx = new RequestContext(exchange, pathVars, requestBody);
 
-                    List<Middleware> middlewareList = new ArrayList<>();
+                List<Middleware> middlewareList = new ArrayList<>();
 
-                    // 🔐 Auth
-                    boolean authEnabled = Config.getBoolean("auth.enabled", true);
+                // 🔐 Auth middleware
+                boolean authEnabled = Config.getBoolean("auth.enabled", true);
 
-                    if (authEnabled &&
+                if (authEnabled &&
                         (method.isAnnotationPresent(Auth.class) ||
                          controller.getClass().isAnnotationPresent(Auth.class))) {
 
-                        Auth auth = method.isAnnotationPresent(Auth.class)
-                                ? method.getAnnotation(Auth.class)
-                                : controller.getClass().getAnnotation(Auth.class);
+                    Auth auth = method.isAnnotationPresent(Auth.class)
+                            ? method.getAnnotation(Auth.class)
+                            : controller.getClass().getAnnotation(Auth.class);
 
-                        middlewareList.add(new AuthMiddleware(auth.role()));
-                    }
+                    middlewareList.add(new AuthMiddleware(auth.role()));
+                }
 
-                    final Method finalMethod = method;
-                    final Object finalController = controller;
+                Method finalMethod = method;
+                Object finalController = controller;
 
-                    MiddlewareChain chain = new MiddlewareChain(middlewareList, (context) -> {
-                        return invokeController(finalMethod, finalController, context, queryParams);
-                    });
+                MiddlewareChain chain = new MiddlewareChain(
+                        middlewareList,
+                        context -> invokeController(finalMethod, finalController, context, queryParams)
+                );
 
-                    Object result = chain.proceed(ctx);
+                Object result = chain.proceed(ctx);
 
-                    if (ctx.handled) return;
+                if (ctx.handled) return;
 
-                    // 🔥 Response
-                    if (result instanceof String) {
-                        response = (String) result;
-                        exchange.getResponseHeaders().add("Content-Type", "text/plain");
-                    } else {
-                        response = mapper.writeValueAsString(result);
-                        exchange.getResponseHeaders().add("Content-Type", "application/json");
-                    }
-
+                // 🔥 Response handling
+                if (result instanceof String) {
+                    response = (String) result;
+                    exchange.getResponseHeaders().add("Content-Type", "text/plain");
                 } else {
-                    response = "404 Not Found";
-                    statusCode = 404;
+                    response = mapper.writeValueAsString(result);
+                    exchange.getResponseHeaders().add("Content-Type", "application/json");
                 }
 
             } catch (Exception e) {
@@ -187,21 +173,32 @@ public class Server {
                 e.printStackTrace();
 
                 try {
-                    if (exceptionHandlerMethod != null) {
 
-                        Object result = exceptionHandlerMethod.invoke(
-                                exceptionHandlerInstance, e
-                        );
+                    Throwable actual = (e instanceof java.lang.reflect.InvocationTargetException)
+                            ? e.getCause()
+                            : e;
+
+                    ExceptionManager.Handler handler = ExceptionManager.getHandler(actual);
+
+                    if (handler != null) {
+
+                        Object result = handler.method.invoke(handler.instance, actual);
 
                         if (result instanceof String) {
                             response = (String) result;
+                            exchange.getResponseHeaders().add("Content-Type", "text/plain");
                         } else {
                             response = mapper.writeValueAsString(result);
+                            exchange.getResponseHeaders().add("Content-Type", "application/json");
                         }
 
                     } else {
+
                         response = mapper.writeValueAsString(
-                                Map.of("error", e.getMessage())
+                                Map.of(
+                                        "error", actual.getClass().getSimpleName(),
+                                        "message", actual.getMessage()
+                                )
                         );
                     }
 
@@ -213,7 +210,7 @@ public class Server {
                 statusCode = 500;
             }
 
-            sendResponse(exchange, response, statusCode);
+            sendSafe(exchange, response, statusCode);
         });
 
         System.out.println("🚀 Server started on port " + port);
@@ -235,16 +232,13 @@ public class Server {
         for (int i = 0; i < parameters.length; i++) {
 
             Parameter param = parameters[i];
-            Class<?> type = param.getType();
             Object value;
 
             if (param.isAnnotationPresent(QueryParam.class)) {
-
                 QueryParam qp = param.getAnnotation(QueryParam.class);
-                value = convertType(queryParams.get(qp.value()), type);
-
+                value = convert(queryParams.get(qp.value()), param.getType());
             } else {
-                value = mapper.readValue(ctx.body, type);
+                value = mapper.readValue(ctx.body, param.getType());
             }
 
             Validator.validate(param, value);
@@ -254,7 +248,9 @@ public class Server {
         return method.invoke(controller, args);
     }
 
+    // =========================
     private static Map<String, String> parseQuery(String query) {
+
         Map<String, String> map = new HashMap<>();
         if (query == null) return map;
 
@@ -262,59 +258,63 @@ public class Server {
             String[] kv = pair.split("=");
             if (kv.length == 2) map.put(kv[0], kv[1]);
         }
+
         return map;
     }
 
-    private static Map<String, String> matchPath(String routePath, String requestPath) {
+    private static Map<String, String> matchPath(String route, String path) {
 
-        String[] routeParts = routePath.split("/");
-        String[] requestParts = requestPath.split("/");
+        String[] r = route.split("/");
+        String[] p = path.split("/");
 
-        if (routeParts.length != requestParts.length) return null;
+        if (r.length != p.length) return null;
 
-        Map<String, String> pathVars = new HashMap<>();
+        Map<String, String> vars = new HashMap<>();
 
-        for (int i = 0; i < routeParts.length; i++) {
+        for (int i = 0; i < r.length; i++) {
 
-            if (routeParts[i].startsWith("{")) {
-                String var = routeParts[i].replace("{", "").replace("}", "");
-                pathVars.put(var, requestParts[i]);
-            } else if (!routeParts[i].equals(requestParts[i])) {
+            if (r[i].startsWith("{")) {
+                vars.put(r[i].replace("{", "").replace("}", ""), p[i]);
+            } else if (!r[i].equals(p[i])) {
                 return null;
             }
         }
 
-        return pathVars;
+        return vars;
     }
 
-    private static Object convertType(String value, Class<?> type) {
+    private static Object convert(String value, Class<?> type) {
 
         if (value == null) return null;
 
         if (type == int.class || type == Integer.class) return Integer.parseInt(value);
         if (type == long.class || type == Long.class) return Long.parseLong(value);
-        if (type == double.class || type == Double.class) return Double.parseDouble(value);
 
         return value;
     }
 
-    private static void sendResponse(HttpExchange exchange, String response, int statusCode) {
-        try {
-            exchange.sendResponseHeaders(statusCode, response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private static String readBody(HttpExchange ex) {
 
-    private static String readRequestBody(HttpExchange exchange) {
         try {
-            InputStream is = exchange.getRequestBody();
+            InputStream is = ex.getRequestBody();
             return new String(is.readAllBytes());
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    // =========================
+    // 🔥 SAFE RESPONSE (no crash)
+    // =========================
+    private static void sendSafe(HttpExchange ex, String res, int code) {
+
+        try {
+            ex.sendResponseHeaders(code, res.getBytes().length);
+            OutputStream os = ex.getResponseBody();
+            os.write(res.getBytes());
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

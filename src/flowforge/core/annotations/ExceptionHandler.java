@@ -2,7 +2,8 @@ package flowforge.core.annotations;
 
 import java.lang.annotation.*;
 
-@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface ExceptionHandler {
+    Class<? extends Throwable> value();
 }

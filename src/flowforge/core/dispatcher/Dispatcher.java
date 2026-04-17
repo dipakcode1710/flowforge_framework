@@ -2,6 +2,7 @@ package flowforge.core.dispatcher;
 
 import flowforge.core.annotations.*;
 import flowforge.core.server.Server;
+import flowforge.core.server.ExceptionManager;
 
 import java.lang.reflect.Method;
 
@@ -43,13 +44,19 @@ public class Dispatcher {
             }
 
             // =========================
-            // 🔥 EXCEPTION HANDLER
+            // 🔥 EXCEPTION HANDLER (FIXED)
             // =========================
             if (method.isAnnotationPresent(ExceptionHandler.class)) {
 
-                Server.registerExceptionHandler(method, controller);
+                ExceptionHandler eh = method.getAnnotation(ExceptionHandler.class);
 
-                System.out.println("Registered ExceptionHandler: " + method.getName());
+                ExceptionManager.register(
+                        eh.value(),
+                        method,
+                        controller
+                );
+
+                System.out.println("⚠️ ExceptionHandler mapped: " + eh.value().getSimpleName());
             }
         }
     }
