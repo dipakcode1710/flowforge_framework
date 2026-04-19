@@ -172,18 +172,22 @@ public ErrorResponse handle(RuntimeException e)
 ## 12. 🛠️ Dev Dashboard
 
 ### 🔹 `/dev/routes`
+Returns all registered routes as JSON.
 
-Returns all registered routes:
+### 🔹 `/dev/docs`
+Returns all registered routes as JSON (Swagger-compatible format).
 
-```json
-[
-  {
-    "method": "GET",
-    "path": "/user",
-    "handler": "UserController#getUser"
-  }
-]
-```
+### 🔹 `/dev/docs-ui`
+Visual interactive API documentation UI.
+
+#### Features:
+* Color-coded method badges (GET, POST, PUT, DELETE)
+* Collapsible route cards
+* Filter routes by HTTP method
+* Per-param input fields that auto-build the URL
+* Global JWT bearer token field shared across all requests
+* Live "Try it" button per route with color-coded response box
+* Handles both `@QueryParam` and `@PathVariable` automatically
 
 ---
 
@@ -234,8 +238,8 @@ Server → handles requests
 | Middleware         | ✅         | ✅           |
 | Validation         | ✅         | ✅           |
 | Exception Handling | ✅         | ✅           |
-| Dev Tools          | ✅         | ✅           |
-| Swagger Docs       | ❌         | ✅           |
+| Dev Dashboard      | ✅         | ✅           |
+| Swagger-like UI    | ✅         | ✅           |
 | ORM / Database     | ❌         | ✅           |
 | AOP                | ❌         | ✅           |
 
@@ -244,36 +248,39 @@ Server → handles requests
 # 📈 Completion Estimate
 
 ```text
-Core Framework Completion: ~70–75%
+Core Framework Completion: ~80%
 ```
 
 👉 You have completed:
 
 * All **core backend fundamentals**
 * Most **developer experience features**
+* Full **interactive API documentation UI**
 
 ---
 
 # 🚀 What to Build Next (Priority Order)
 
-## 🥇 1. Swagger-like API Docs (`/dev/docs`)
-
-* Visual API documentation
-* Huge impact feature
-
-## 🥈 2. /dev/beans Dashboard
+## 🥇 1. /dev/beans Dashboard
 
 * Show all registered beans
 * Debug DI issues easily
 
-## 🥉 3. @Component Enhancements
+## 🥈 2. @Component Enhancements
 
 * Bean scopes (singleton/prototype)
 * Lazy initialization
 
-## 🏗️ 4. Database Layer (ORM-lite)
+## 🥉 3. Database Layer (ORM-lite)
 
 * Basic repository support
+* `@Repository` annotation
+* Simple CRUD operations
+
+## 🏗️ 4. AOP Support
+
+* `@Before` / `@After` method interceptors
+* Logging and timing aspects
 
 ---
 
@@ -290,15 +297,15 @@ FlowForge now supports:
 ✔ Exception Handling
 ✔ Dev Dashboard
 ✔ Component System
+✔ Interactive API Docs UI (/dev/docs-ui)
 ```
 
 👉 This is no longer a prototype.
 👉 This is a **functional backend framework core**.
+👉 The `/dev/docs-ui` brings it on par with production frameworks for developer experience.
 
 ---
 
 # 👨‍💻 Author
 
 Dipak
-
----
