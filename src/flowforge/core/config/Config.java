@@ -9,12 +9,12 @@ public class Config {
 
     static {
         try {
-            // 🔥 1. Load base config
+            // 1. Load base config
             loadFile("app.properties");
 
-            System.out.println("✅ Loaded app.properties");
+            System.out.println("Loaded app.properties");
 
-            // 🔥 2. Check environment
+            // 2. Check environment
             String env = props.getProperty("app.env");
 
             if (env != null && !env.isEmpty()) {
@@ -23,7 +23,7 @@ public class Config {
 
                 loadFile(envFile);
 
-                System.out.println("✅ Loaded " + envFile);
+                System.out.println("Loaded " + envFile);
             }
 
         } catch (Exception e) {
@@ -42,10 +42,10 @@ public class Config {
                 Properties temp = new Properties();
                 temp.load(is);
 
-                // 🔥 Override existing values
+                // Override existing values
                 props.putAll(temp);
             } else {
-                System.out.println("⚠️ " + filename + " not found");
+                System.out.println("Warning " + filename + " not found");
             }
 
         } catch (Exception e) {
@@ -54,7 +54,7 @@ public class Config {
     }
 
     // =========================
-    // 🔥 Getters
+    // Getters
     // =========================
 
     public static String get(String key) {

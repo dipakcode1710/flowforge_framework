@@ -17,7 +17,7 @@ public class ConfigBinder {
         ConfigurationProperties cp = clazz.getAnnotation(ConfigurationProperties.class);
         String prefix = cp.value();
 
-        System.out.println("⚙️ [ConfigBinder] Binding: " + clazz.getName());
+        System.out.println(" [ConfigBinder] Binding: " + clazz.getName());
 
         try {
 
@@ -35,7 +35,7 @@ public class ConfigBinder {
 
                     field.set(obj, converted);
 
-                    System.out.println("✅ [ConfigBinder] " + key + " = " + converted);
+                    System.out.println(" [ConfigBinder] " + key + " = " + converted);
                 }
             }
 
