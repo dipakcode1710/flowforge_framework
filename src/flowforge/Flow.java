@@ -24,24 +24,28 @@ public class Flow {
             List<Class<?>> classes = ClassScanner.scan(basePackage);
 
             // =========================
-            // 🔥 1. Register Beans
+            // 1. Register Beans
             // =========================
             for (Class<?> clazz : classes) {
 
-                if (
-                        clazz.isAnnotationPresent(Controller.class) ||
-                        clazz.isAnnotationPresent(Service.class) ||
-                        clazz.isAnnotationPresent(ConfigurationProperties.class)
-                ) {
+                // ❗ Skip interfaces / abstract classes
+                if (clazz.isInterface() || java.lang.reflect.Modifier.isAbstract(clazz.getModifiers())) {
+                    continue;
+                }
+
+                // Generic bean detection
+                if (isBean(clazz)) {
+
                     Object instance = clazz.getDeclaredConstructor().newInstance();
 
                     Context.addBean(clazz, instance);
+
                     System.out.println("📦 Bean Registered: " + clazz.getName());
                 }
             }
 
             // =========================
-            // 🔥 2. Inject Dependencies
+            // 2. Inject Dependencies
             // =========================
             for (Class<?> clazz : classes) {
 
@@ -52,20 +56,20 @@ public class Flow {
             }
 
             // =========================
-            // 🔥 3. Register Routes + Exception Handlers
+            // 3. Register Routes + Exception Handlers
             // =========================
             for (Class<?> clazz : classes) {
 
                 Object bean = Context.getBean(clazz);
                 if (bean == null) continue;
 
-                // 🔥 Controllers
+                // Controllers
                 if (clazz.isAnnotationPresent(Controller.class)) {
                     Dispatcher.register(bean);
                     System.out.println("🚀 Controller Ready: " + clazz.getName());
                 }
 
-                // 🔥 Exception Handlers
+                // Exception Handlers
                 for (Method method : clazz.getDeclaredMethods()) {
 
                     if (method.isAnnotationPresent(ExceptionHandler.class)) {
@@ -82,7 +86,7 @@ public class Flow {
             }
 
             // =========================
-            // 🔥 4. Start Server
+            // 4. Start Server
             // =========================
             int port = Config.getInt("server.port", 8080);
             Server.start(port);
@@ -90,5 +94,13 @@ public class Flow {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static boolean isBean(Class<?> clazz) {
+
+        return clazz.isAnnotationPresent(flowforge.core.annotations.Component.class) ||
+            clazz.isAnnotationPresent(flowforge.core.annotations.Service.class) ||
+            clazz.isAnnotationPresent(flowforge.core.annotations.Controller.class) ||
+            clazz.isAnnotationPresent(flowforge.core.annotations.ConfigurationProperties.class);
     }
 }

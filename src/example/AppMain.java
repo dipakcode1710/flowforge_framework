@@ -7,13 +7,13 @@ public class AppMain {
 
     public static void main(String[] args) {
 
-        // 🔥 Generate token
+        //  Generate token
         System.out.println(JwtUtil.generateToken("dipak", "ADMIN"));
 
-        // 🔥 Check config
+        //  Check config
         System.out.println("PORT = " + flowforge.core.config.Config.get("server.port"));
 
-        // 🔥 Start framework
+        //  Start framework
         Flow.run(AppMain.class);
     }
 }

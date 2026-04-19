@@ -9,7 +9,9 @@ public class UserController {
     @Inject
     private UserService service;
     @Inject
-    private ServerConfig config;   // ✅ FIXED    
+    private ServerConfig config;   // FIXED
+    @Inject
+    private AppHelper helper;    
 
     /*@Get("/user/{id}")
     public String getUser(@PathVariable("id") int id) {
@@ -81,5 +83,10 @@ public class UserController {
     @Get("/server")
     public String server() {
         return "Port: " + config.port + ", Name: " + config.name;
-    }    
+    } 
+    
+    @Get("/comp")
+    public String test() {
+        return helper.getMessage();
+    }
 }
