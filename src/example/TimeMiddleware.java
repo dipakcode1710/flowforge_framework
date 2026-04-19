@@ -13,7 +13,7 @@ public class TimeMiddleware implements Middleware {
 
         long end = System.currentTimeMillis();
 
-        System.out.println("⏱ Execution time: " + (end - start) + " ms");
+        System.out.println(" Execution time: " + (end - start) + " ms");
 
         return result;
     }

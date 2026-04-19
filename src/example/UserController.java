@@ -32,7 +32,7 @@ public class UserController {
 	/*
     @Get("/test")
     public String test() {
-        return "Middleware Working 🔥";
+        return "Middleware Working ";
     }
     @Get("/user")
     public String getUser(@QueryParam(value="id", required=false) Integer id) {
@@ -43,7 +43,7 @@ public class UserController {
     @Auth
     @Get("/secure")
     public String secure() {
-        return "Protected Data 🔒";
+        return "Protected Data ";
     }
     
     @Get("/secure1")
@@ -65,7 +65,7 @@ public class UserController {
     @Auth(role = "ADMIN")
     @Get("/admin")
     public String admin() {
-        return "Admin API 🔒";
+        return "Admin API ";
     }
     
     

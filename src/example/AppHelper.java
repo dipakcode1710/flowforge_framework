@@ -6,6 +6,6 @@ import flowforge.core.annotations.Component;
 public class AppHelper {
 
     public String getMessage() {
-        return "Hello from Component 🚀";
+        return "Hello from Component ";
     }
 }
