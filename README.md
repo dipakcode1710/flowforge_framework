@@ -1,298 +1,299 @@
-# 🚀 FlowForge Framework – Usage Guide
+# 🚀 FlowForge Framework – Progress & Feature Documentation
 
-FlowForge is a lightweight Java backend framework designed for fast API development with minimal setup and a clean developer experience.
+## 📌 Overview
 
-This guide explains how to **use the framework**, not how it is built.
-
----
-
-# 📦 What FlowForge Provides
-
-FlowForge handles everything automatically:
-
-- HTTP server startup
-- Request routing (GET/POST)
-- JSON request/response handling
-- Dependency injection
-- Service lifecycle management
-- Dynamic URL handling (Path Variables)
-- Query parameter handling
-- Middleware system
-- Authentication & Authorization (JWT-based)
+FlowForge is a lightweight Java backend framework designed for rapid API development with minimal configuration.
+It provides a clean developer experience similar to modern frameworks like Spring Boot, but with a simplified internal architecture.
 
 ---
 
-# 🚀 How to Start a FlowForge Application
+# ✅ Core Features Implemented
 
-1. Create a main application entry point
-2. Run the application
-3. Framework starts the server automatically
+## 1. 🌐 Embedded HTTP Server
 
-Application runs on:
-
-http://localhost:8080
+* Built using Java `HttpServer`
+* Automatic startup with configurable port
+* Handles routing and request lifecycle
 
 ---
 
-# 🔀 Defining APIs
+## 2. 🔀 Routing System
 
-FlowForge uses annotations to define endpoints.
+Supports annotation-based routing:
 
----
+```java
+@Get("/user")
+@Post("/create")
+```
 
-## 📥 GET APIs
+### Features:
 
-- Used for fetching data
-- Can be accessed via browser or API tools
-
----
-
-## 📤 POST APIs
-
-- Used for sending data to server
-- Accepts JSON input
-- Returns JSON response
-
-### To call POST APIs:
-
-- Use Postman or curl
-- Add header:
-
-Content-Type: application/json
-
-- Send JSON body
+* HTTP method mapping (GET, POST)
+* Dynamic path variables (`/user/{id}`)
+* Query parameter support
 
 ---
 
-# 📦 JSON Handling
+## 3. 🧠 Dependency Injection (DI Container)
 
-FlowForge automatically:
+### Supported:
 
-- Converts request JSON → Java objects
-- Converts Java objects → JSON response
+```java
+@Inject
+private UserService service;
+```
 
-### Behavior
+### Capabilities:
 
-| Input        | Output               |
-|--------------|--------------------|
-| JSON request | Java object        |
-| Java object  | JSON response      |
-| Invalid JSON | 400 Error response |
-
----
-
-# 🔗 Dynamic URLs (Path Variables)
-
-Supports dynamic routing using URL values.
-
-### Example URLs
-
-/user/10  
-/user/10/order/500  
-
-### Behavior
-
-- Values are automatically extracted
-- Supports multiple variables
-- Automatically type converted
+* Automatic bean creation
+* Recursive dependency injection
+* Context-based bean storage
+* Lazy + eager resolution
 
 ---
 
-# 🔍 Query Parameters
+## 4. 🧩 Bean System
 
-FlowForge supports query-based inputs.
+### Supported annotations:
 
-### Example
+```java
+@Component
+@Service
+@Controller
+@ConfigurationProperties
+```
 
-/user?id=10  
-/search?q=phone&page=2  
+### Behavior:
 
-### Behavior
-
-- Automatically extracted from URL
-- Supports required and optional parameters
-
----
-
-# 🔢 Type Conversion
-
-FlowForge automatically converts values into correct types:
-
-| Value  | Type   |
-|--------|--------|
-| 10     | int    |
-| 1000   | long   |
-| 10.5   | double |
-| text   | String |
+* Automatic class scanning
+* Bean registration in context
+* Generic DI support (not limited to controllers/services)
 
 ---
 
-# 🔌 Dependency Injection
+## 5. ⚙️ Configuration System
 
-FlowForge automatically manages dependencies.
+### Features:
 
-### Behavior
-
-- Services are auto-created
-- Injected wherever needed
-- No manual object creation required
+* `app.properties` support
+* Profile-based configs (`app-dev.properties`, `app-prod.properties`)
+* Runtime config resolution
 
 ---
 
-# 🧩 Service Layer
+## 6. 💉 @Value Injection
 
-Used to separate business logic.
+```java
+@Value(value = "app.name", defaultValue = "DefaultApp")
+private String appName;
+```
 
-### Benefits
+### Supports:
 
-- Clean architecture
-- Reusable logic
-- Better maintainability
-
----
-
-# 🔍 Auto Detection
-
-FlowForge automatically detects:
-
-- Controllers
-- Services
-
-No manual registration required.
+* Type conversion
+* Default values
 
 ---
 
-# ⚙️ Middleware System
+## 7. 📦 @ConfigurationProperties
 
-FlowForge provides a powerful middleware system.
+```java
+@ConfigurationProperties("server")
+public class ServerConfig {
+    public int port;
+    public String name;
+}
+```
 
-### Capabilities
+### Features:
 
-- Execute logic before request
-- Modify request/response
-- Stop request execution
-- Chain multiple middlewares
-
-### Common Use Cases
-
-- Logging
-- Authentication
-- Rate limiting
-- Request validation
+* Prefix-based binding
+* Automatic field mapping
+* Strongly typed config
 
 ---
 
-# 🔐 Authentication (JWT Based)
+## 8. 🛡️ Middleware System
 
-FlowForge supports JWT-based authentication.
+### Example:
 
-### How it works
+```java
+@Auth(role = "ADMIN")
+```
 
-- APIs can be protected
-- Requests must include a valid JWT token
+### Capabilities:
 
-### Example header
-
-Authorization: Bearer <token>
-
----
-
-# 🛡️ Role-Based Authorization
-
-FlowForge supports role-based access control.
-
-### Behavior
-
-- APIs can require specific roles
-- Role is extracted from JWT
-- Access is granted or denied automatically
-
-### Example roles
-
-- USER
-- ADMIN
+* Request interception
+* Chain-based execution
+* Role-based authorization
 
 ---
 
-# 🌐 API Response Behavior
+## 9. 🔐 JWT Authentication
 
-| Scenario              | Response  |
-|----------------------|----------|
-| Success              | 200 OK   |
-| Invalid JSON         | 400 Error|
-| Unauthorized         | 401 Error|
-| Forbidden (role)     | 403 Error|
-| Route not found      | 404 Error|
-| Internal error       | 500 Error|
+* Token generation
+* Role-based access control
+* Middleware integration
 
 ---
 
-# 🧪 Testing APIs
+## 10. ✅ Validation System
 
-You can test APIs using:
+```java
+@Get("/test")
+public String test(@QueryParam("id") @NotNull @Min(5) Integer id)
+```
 
-- Browser (GET requests)
-- Postman
-- curl
+### Features:
 
----
-
-# 📁 Project Setup Requirements
-
-To use FlowForge:
-
-- Add FlowForge library
-- Add Jackson dependencies
-- Add JWT dependencies (for auth)
-
-No configuration files required.
+* Annotation-based validation
+* Runtime enforcement
+* Integrated with exception handling
 
 ---
 
-# ⚡ Key Advantages
+## 11. ⚠️ Advanced Exception Handling
 
-- Zero configuration
-- Lightweight
-- Fast development
-- Clean architecture
-- Annotation-driven design
-- Built-in auth & middleware
+```java
+@ExceptionHandler(RuntimeException.class)
+@ResponseStatus(400)
+public ErrorResponse handle(RuntimeException e)
+```
 
----
+### Features:
 
-# 🚧 Current Capabilities
-
-- Routing (GET/POST)
-- JSON handling
-- Dependency Injection
-- Service layer support
-- Path variables (multi + typed)
-- Query parameters
-- Middleware system
-- JWT Authentication 🔥
-- Role-based Authorization 🔥
+* Multiple exception handlers
+* Type-based resolution
+* JSON error responses
+* HTTP status control
 
 ---
 
-# 🔮 Upcoming Features
+## 12. 🛠️ Dev Dashboard
 
-- Configuration system (app.properties)
-- Validation framework
-- Global middleware
-- API documentation UI
-- Exception handling improvements
+### 🔹 `/dev/routes`
+
+Returns all registered routes:
+
+```json
+[
+  {
+    "method": "GET",
+    "path": "/user",
+    "handler": "UserController#getUser"
+  }
+]
+```
+
+---
+
+# 🧪 Example Usage
+
+```java
+@Controller
+public class UserController {
+
+    @Inject
+    private UserService service;
+
+    @Get("/hello")
+    public String hello() {
+        return service.getMessage();
+    }
+}
+```
+
+---
+
+# 🧠 Internal Architecture
+
+```text
+Flow.run()
+   ↓
+ClassScanner → finds classes
+   ↓
+Context → registers beans
+   ↓
+Injector → injects dependencies
+   ↓
+Dispatcher → maps routes
+   ↓
+Server → handles requests
+```
+
+---
+
+# 📊 Progress vs Real Frameworks
+
+| Feature            | FlowForge | Spring Boot |
+| ------------------ | --------- | ----------- |
+| DI Container       | ✅         | ✅           |
+| Routing            | ✅         | ✅           |
+| Config System      | ✅         | ✅           |
+| Profiles           | ✅         | ✅           |
+| Middleware         | ✅         | ✅           |
+| Validation         | ✅         | ✅           |
+| Exception Handling | ✅         | ✅           |
+| Dev Tools          | ✅         | ✅           |
+| Swagger Docs       | ❌         | ✅           |
+| ORM / Database     | ❌         | ✅           |
+| AOP                | ❌         | ✅           |
+
+---
+
+# 📈 Completion Estimate
+
+```text
+Core Framework Completion: ~70–75%
+```
+
+👉 You have completed:
+
+* All **core backend fundamentals**
+* Most **developer experience features**
+
+---
+
+# 🚀 What to Build Next (Priority Order)
+
+## 🥇 1. Swagger-like API Docs (`/dev/docs`)
+
+* Visual API documentation
+* Huge impact feature
+
+## 🥈 2. /dev/beans Dashboard
+
+* Show all registered beans
+* Debug DI issues easily
+
+## 🥉 3. @Component Enhancements
+
+* Bean scopes (singleton/prototype)
+* Lazy initialization
+
+## 🏗️ 4. Database Layer (ORM-lite)
+
+* Basic repository support
 
 ---
 
 # 🎯 Summary
 
-FlowForge allows developers to:
+FlowForge now supports:
 
-- Build APIs quickly
-- Avoid boilerplate code
-- Focus on business logic
-- Build secure APIs with JWT
-- Scale with clean architecture
+```text
+✔ Dependency Injection
+✔ Routing
+✔ Config Management
+✔ Middleware & Auth
+✔ Validation
+✔ Exception Handling
+✔ Dev Dashboard
+✔ Component System
+```
+
+👉 This is no longer a prototype.
+👉 This is a **functional backend framework core**.
 
 ---
 
@@ -301,7 +302,3 @@ FlowForge allows developers to:
 Dipak
 
 ---
-
-# ⭐ Support
-
-If you find FlowForge useful, consider supporting the project.
