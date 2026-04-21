@@ -155,10 +155,13 @@ function buildCurl(index, method) {
   if (token) parts.push(`  -H "Authorization: Bearer ${token}"`);
   if (method === "POST" || method === "PUT") {
     const bodyEl = document.getElementById("request-body-" + index);
-    const body = bodyEl ? bodyEl.value.trim() : "";
-    if (body) {
+    const rawBody = bodyEl ? bodyEl.value.trim() : "";
+    if (rawBody) {
+      let compactBody = rawBody;
+      try { compactBody = JSON.stringify(JSON.parse(rawBody)); } catch(e) {}
+      const escaped = compactBody.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
       parts.push(`  -H "Content-Type: application/json"`);
-      parts.push(`  -d '${body}'`);
+      parts.push(`  -d "${escaped}"`);
     }
   }
   parts.push(`  "${url}"`);
