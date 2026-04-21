@@ -310,7 +310,7 @@ public class Server {
             Object value = null;
 
             // =========================
-            // 🔥 1. Query Param
+            // 🔥 QueryParam
             // =========================
             if (param.isAnnotationPresent(QueryParam.class)) {
 
@@ -319,7 +319,7 @@ public class Server {
             }
 
             // =========================
-            // 🔥 2. Path Variable (FIX)
+            // 🔥 PathVariable
             // =========================
             else if (param.isAnnotationPresent(PathVariable.class)) {
 
@@ -330,14 +330,15 @@ public class Server {
             }
 
             // =========================
-            // 🔥 3. Request Body (SAFE)
+            // 🔥 RequestBody (NEW)
             // =========================
-            else {
+            else if (param.isAnnotationPresent(RequestBody.class)) {
 
-                // Only parse if body exists
-                if (ctx.body != null && !ctx.body.isEmpty()) {
-                    value = mapper.readValue(ctx.body, param.getType());
+                if (ctx.body == null || ctx.body.isEmpty()) {
+                    throw new RuntimeException("Request body is required");
                 }
+
+                value = mapper.readValue(ctx.body, param.getType());
             }
 
             // =========================

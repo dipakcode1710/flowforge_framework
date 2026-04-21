@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FlowForge API Docs</title>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#f8f8f7;color:#1a1a18;font-size:14px}
@@ -18,13 +17,14 @@ body{font-family:system-ui,sans-serif;background:#f8f8f7;color:#1a1a18;font-size
 .token-row label{font-size:12px;color:#888;min-width:90px}
 
 .filter-bar{padding:10px 24px;display:flex;gap:6px;background:#fff;border-bottom:1px solid #e5e4df}
-.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer}
-.filter-btn.active{border-color:#888;color:#1a1a18;font-weight:500}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+.filter-btn:hover{border-color:#bbb;color:#333}
+.filter-btn.active{border-color:#888;color:#1a1a18;font-weight:500;background:#f5f5f3}
 
 .routes{padding:16px 24px;display:flex;flex-direction:column;gap:8px}
 
 .route-card{border:1px solid #e5e4df;border-radius:10px;background:#fff}
-.route-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer}
+.route-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;border-radius:10px}
 .route-header:hover{background:#f5f5f3}
 
 .method{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;min-width:50px;text-align:center}
@@ -35,27 +35,61 @@ body{font-family:system-ui,sans-serif;background:#f8f8f7;color:#1a1a18;font-size
 
 .path{font-family:monospace;font-size:13px;flex:1}
 .auth-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#faeeda;color:#854f0b}
+.chevron{font-size:11px;color:#aaa;transition:transform .2s}
+.chevron.open{transform:rotate(90deg)}
 
-.route-body{display:none;border-top:1px solid #eee;padding:14px;background:#fafaf9}
+.route-body{display:none;border-top:1px solid #eee;padding:14px;background:#fafaf9;border-radius:0 0 10px 10px}
 .route-body.open{display:block}
 
 .param-inputs{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
 .param-group{display:flex;align-items:center;gap:6px}
 .param-name{font-family:monospace;font-size:12px;color:#888}
 
-input[type=text]{padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:monospace;font-size:13px;color:#1a1a18;outline:none}
+input[type=text]{padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:monospace;font-size:13px;outline:none;transition:border-color .15s}
 input[type=text]:focus{border-color:#888}
 
-.try-row{display:flex;gap:8px}
-.try-btn{padding:6px 14px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;font-size:13px}
-.try-btn:hover{background:#f0f0ee}
+textarea{width:100%;height:90px;border:1px solid #ddd;border-radius:7px;font-family:monospace;font-size:12px;padding:8px;outline:none;resize:vertical;transition:border-color .15s}
+textarea:focus{border-color:#888}
 
-.response-box{margin-top:10px;padding:10px;border:1px solid #eee;border-radius:7px;font-family:monospace;font-size:12px;white-space:pre-wrap;color:#888}
-.response-box.success{border-color:#9fe1cb;color:#0f6e56;background:#e1f5ee}
-.response-box.error{border-color:#f7c1c1;color:#a32d2d;background:#fcebeb}
+.try-row{display:flex;gap:8px;margin-top:10px}
+
+.btn{padding:6px 12px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:5px;color:#444;transition:all .15s;white-space:nowrap}
+.btn:hover{background:#f5f5f3;border-color:#bbb;color:#1a1a18}
+.btn:active{background:#eee}
+.btn.primary{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.btn.primary:hover{background:#333}
+.btn.success{background:#eaf3de;color:#3b6d11;border-color:#c0dd97}
+.btn.copied{background:#eaf3de;color:#3b6d11;border-color:#c0dd97}
+
+.response-section{margin-top:10px}
+.response-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.response-label{font-size:11px;color:#888;margin-right:auto}
+.status-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-family:monospace;font-weight:600}
+.status-pill.ok{background:#eaf3de;color:#3b6d11}
+.status-pill.err{background:#fcebeb;color:#a32d2d}
+
+.response-box{padding:10px;border:1px solid #eee;border-radius:7px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:400px;overflow-y:auto;background:#fafaf9;transition:all .2s}
+.response-box.success{border-color:#9fe1cb;background:#e1f5ee}
+.response-box.error{border-color:#f7c1c1;background:#fcebeb}
+.response-box.placeholder{color:#aaa}
+
+.format-toggle{display:flex;gap:4px;margin-left:4px}
+.fmt-btn{font-size:11px;padding:2px 7px;border:1px solid #ddd;border-radius:5px;background:#fff;cursor:pointer;color:#666;transition:all .15s}
+.fmt-btn.active{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.fmt-btn:hover:not(.active){background:#f5f5f3}
+
+.json-key{color:#185fa5}
+.json-str{color:#3b6d11}
+.json-num{color:#854f0b}
+.json-bool{color:#a32d2d}
+.json-null{color:#888}
+
+.curl-box{margin-top:8px;padding:10px;border:1px solid #e5e4df;border-radius:7px;font-family:monospace;font-size:12px;white-space:pre-wrap;background:#f5f5f3;max-height:200px;overflow-y:auto;display:none}
+.curl-box.open{display:block}
+
+.section-label{font-size:11px;color:#888;font-weight:500;margin-bottom:6px;margin-top:12px;text-transform:uppercase;letter-spacing:.05em}
 </style>
 </head>
-
 <body>
 
 <div class="header">
@@ -73,76 +107,128 @@ input[type=text]:focus{border-color:#888}
 <div class="routes" id="routes-container"></div>
 
 <script>
-
-// =========================
-// LOAD ROUTES
-// Injected server-side as base64 to avoid any quote/escaping issues.
-// =========================
 const ROUTES = JSON.parse(atob('{{ROUTES_BASE64}}'));
 
 let activeFilter = "ALL";
 const methods = ["ALL", ...new Set(ROUTES.map(r => r.method))];
 
-// =========================
-// FILTER UI
-// =========================
-function renderFilters() {
-  document.getElementById("filters").innerHTML = methods.map(m =>
-    `<button class="filter-btn${m === activeFilter ? ' active' : ''}"
-      onclick="setFilter('${m}')">${m}</button>`
-  ).join("");
+// ==========================
+// JSON HIGHLIGHT + FORMAT
+// ==========================
+function syntaxHighlight(json) {
+  if (typeof json !== "string") {
+    try { json = JSON.stringify(json, null, 2); } catch(e) { return json; }
+  }
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+    let cls = "json-num";
+    if (/^"/.test(match)) cls = /:$/.test(match) ? "json-key" : "json-str";
+    else if (/true|false/.test(match)) cls = "json-bool";
+    else if (/null/.test(match)) cls = "json-null";
+    return `<span class="${cls}">${match}</span>`;
+  });
 }
 
-function setFilter(m) {
-  activeFilter = m;
-  renderFilters();
-  renderRoutes();
+function tryParseJson(text) {
+  try { return JSON.parse(text); }
+  catch(e) { return null; }
 }
 
-// =========================
+function formatResponse(text, mode) {
+  const parsed = tryParseJson(text);
+  if (!parsed) return { html: escapeHtml(text), isJson: false };
+  if (mode === "pretty") return { html: syntaxHighlight(JSON.stringify(parsed, null, 2)), isJson: true };
+  return { html: escapeHtml(JSON.stringify(parsed)), isJson: true };
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ==========================
+// CURL BUILDER
+// ==========================
+function buildCurl(index, method) {
+  const path = document.getElementById("url-" + index)?.value || ROUTES[index].path;
+  const token = document.getElementById("global-token").value.trim();
+  const url = window.location.origin + path;
+  let parts = ["curl -X " + method];
+  if (token) parts.push(`  -H "Authorization: Bearer ${token}"`);
+  if (method === "POST" || method === "PUT") {
+    const bodyEl = document.getElementById("request-body-" + index);
+    const body = bodyEl ? bodyEl.value.trim() : "";
+    if (body) {
+      parts.push(`  -H "Content-Type: application/json"`);
+      parts.push(`  -d '${body}'`);
+    }
+  }
+  parts.push(`  "${url}"`);
+  return parts.join(" \\\n");
+}
+
+// ==========================
+// COPY HELPER
+// ==========================
+function copyText(text, btnId) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+  });
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML = "&#10003; copied";
+  btn.classList.add("copied");
+  setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("copied"); }, 1800);
+}
+
+// ==========================
 // URL BUILDER
-// Called via data-index attribute — no inline JSON in HTML attributes.
-// =========================
+// ==========================
 function buildUrl(index) {
   const route = ROUTES[index];
-  if (!route) return;
-
   let url = route.path;
   const queryParts = [];
-
   route.params.forEach(p => {
     const input = document.getElementById("param-" + index + "-" + p);
     if (!input) return;
     const val = input.value.trim();
     if (!val) return;
-
-    // Replace path variable e.g. {id}, otherwise treat as query param
     const placeholder = "{" + p + "}";
-    if (url.includes(placeholder)) {
-      url = url.replace(placeholder, encodeURIComponent(val));
-    } else {
-      queryParts.push(p + "=" + encodeURIComponent(val));
-    }
+    if (url.includes(placeholder)) url = url.replace(placeholder, encodeURIComponent(val));
+    else queryParts.push(p + "=" + encodeURIComponent(val));
   });
-
   if (queryParts.length) url += "?" + queryParts.join("&");
-
-  const urlInput = document.getElementById("url-" + index);
-  if (urlInput) urlInput.value = url;
+  document.getElementById("url-" + index).value = url;
+  updateCurlBox(index, route.method);
 }
 
-// =========================
+function updateCurlBox(index, method) {
+  const box = document.getElementById("curl-box-" + index);
+  if (box && box.classList.contains("open")) {
+    box.textContent = buildCurl(index, method);
+  }
+}
+
+// ==========================
+// FILTERS
+// ==========================
+function renderFilters() {
+  document.getElementById("filters").innerHTML = methods.map(m =>
+    `<button class="filter-btn${m===activeFilter?" active":""}" onclick="setFilter('${m}')">${m}</button>`
+  ).join("");
+}
+function setFilter(m) {
+  activeFilter = m; renderFilters(); renderRoutes();
+}
+
+// ==========================
 // RENDER ROUTES
-// All event wiring is done in JS after innerHTML — zero inline JS in attributes.
-// =========================
+// ==========================
 function renderRoutes() {
-
-  const filtered = ROUTES
-    .map((r, index) => ({ ...r, index }))
-    .filter(r => activeFilter === "ALL" || r.method === activeFilter);
-
-  document.getElementById("route-count").textContent =
-    filtered.length + " route" + (filtered.length !== 1 ? "s" : "");
+  const filtered = ROUTES.map((r,i) => ({...r, index:i})).filter(r => activeFilter==="ALL" || r.method===activeFilter);
+  document.getElementById("route-count").textContent = filtered.length + " routes";
 
   document.getElementById("routes-container").innerHTML = filtered.map(r => `
     <div class="route-card">
@@ -150,83 +236,208 @@ function renderRoutes() {
         <span class="method ${r.method}">${r.method}</span>
         <span class="path">${r.path}</span>
         ${r.auth ? '<span class="auth-badge">auth</span>' : ''}
+        <span class="chevron" id="chev-${r.index}">&#9654;</span>
       </div>
-
       <div class="route-body" id="body-${r.index}">
 
-        ${r.params && r.params.length ? `
-        <div class="param-inputs" id="params-${r.index}">
+        ${r.params.length ? `
+        <div class="section-label">Parameters</div>
+        <div class="param-inputs">
           ${r.params.map(p => `
             <div class="param-group">
               <span class="param-name">${p}</span>
-              <input type="text"
-                id="param-${r.index}-${p}"
-                placeholder="${p}..."
-                data-index="${r.index}" />
+              <input type="text" id="param-${r.index}-${p}" data-index="${r.index}" placeholder="${p}">
             </div>
           `).join("")}
         </div>` : ""}
 
+        ${(r.method==="POST"||r.method==="PUT") ? `
+        <div class="section-label">Request body</div>
+        <textarea id="request-body-${r.index}" data-index="${r.index}" placeholder='{\n  "key": "value"\n}'></textarea>
+        ` : ""}
+
+        <div class="section-label">URL</div>
         <div class="try-row">
           <input type="text" id="url-${r.index}" value="${r.path}" style="flex:1" />
-          <button class="try-btn" data-index="${r.index}" data-method="${r.method}">Try ↗</button>
+          <button class="btn primary" data-index="${r.index}" data-method="${r.method}" id="try-btn-${r.index}">
+            &#9654; send
+          </button>
         </div>
 
-        <div class="response-box" id="res-${r.index}">response will appear here</div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn" id="curl-toggle-${r.index}" onclick="toggleCurl(${r.index},'${r.method}')">
+            { } curl
+          </button>
+          <button class="btn" id="copy-curl-${r.index}" onclick="copyCurl(${r.index},'${r.method}')">
+            &#128203; copy curl
+          </button>
+        </div>
+
+        <pre class="curl-box" id="curl-box-${r.index}"></pre>
+
+        <div class="response-section" id="res-section-${r.index}" style="display:none">
+          <div class="response-toolbar">
+            <span class="response-label">Response</span>
+            <span class="status-pill" id="status-pill-${r.index}"></span>
+            <div class="format-toggle">
+              <button class="fmt-btn active" id="fmt-pretty-${r.index}" onclick="setFmt(${r.index},'pretty')">pretty</button>
+              <button class="fmt-btn" id="fmt-raw-${r.index}" onclick="setFmt(${r.index},'raw')">raw</button>
+            </div>
+            <button class="btn" id="copy-res-btn-${r.index}" onclick="copyResponse(${r.index})">&#128203; copy</button>
+          </div>
+          <div class="response-box" id="res-${r.index}"></div>
+        </div>
 
       </div>
     </div>
   `).join("");
 
-  // Wire up events after render — no inline JS attributes needed
+  // toggle open/close
   document.querySelectorAll(".route-header").forEach(el => {
     el.addEventListener("click", () => {
-      const index = el.dataset.index;
-      document.getElementById("body-" + index).classList.toggle("open");
+      const i = el.dataset.index;
+      const body = document.getElementById("body-" + i);
+      const chev = document.getElementById("chev-" + i);
+      body.classList.toggle("open");
+      chev.classList.toggle("open");
     });
   });
 
-  document.querySelectorAll(".param-inputs input").forEach(input => {
-    input.addEventListener("input", () => buildUrl(input.dataset.index));
+  // param inputs
+  document.querySelectorAll(".param-inputs input").forEach(inp => {
+    inp.addEventListener("input", () => buildUrl(inp.dataset.index));
   });
 
-  document.querySelectorAll(".try-btn").forEach(btn => {
+  // body textarea — update curl live
+  document.querySelectorAll("textarea[data-index]").forEach(ta => {
+    ta.addEventListener("input", () => updateCurlBox(ta.dataset.index, ROUTES[ta.dataset.index].method));
+  });
+
+  // url input — update curl live
+  document.querySelectorAll(".try-row input").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const i = inp.id.replace("url-","");
+      if (!isNaN(i)) updateCurlBox(i, ROUTES[i].method);
+    });
+  });
+
+  // global token — update open curl boxes
+  document.getElementById("global-token").addEventListener("input", () => {
+    document.querySelectorAll(".curl-box.open").forEach(box => {
+      const i = box.id.replace("curl-box-","");
+      box.textContent = buildCurl(i, ROUTES[i].method);
+    });
+  });
+
+  // try buttons
+  document.querySelectorAll("[id^='try-btn-']").forEach(btn => {
     btn.addEventListener("click", () => tryIt(btn.dataset.index, btn.dataset.method));
   });
 }
 
-// =========================
-// API CALL
-// =========================
-async function tryIt(index, method) {
+// ==========================
+// CURL TOGGLE + COPY
+// ==========================
+function toggleCurl(index, method) {
+  const box = document.getElementById("curl-box-" + index);
+  box.classList.toggle("open");
+  if (box.classList.contains("open")) box.textContent = buildCurl(index, method);
+}
 
+function copyCurl(index, method) {
+  copyText(buildCurl(index, method), "copy-curl-" + index);
+}
+
+// ==========================
+// RESPONSE STORE + FMT
+// ==========================
+const responseStore = {};
+
+function setFmt(index, mode) {
+  responseStore[index] = responseStore[index] || {};
+  responseStore[index].mode = mode;
+  document.getElementById("fmt-pretty-" + index).classList.toggle("active", mode==="pretty");
+  document.getElementById("fmt-raw-" + index).classList.toggle("active", mode==="raw");
+  if (responseStore[index].text !== undefined) renderResponseText(index);
+}
+
+function renderResponseText(index) {
+  const store = responseStore[index];
+  if (!store) return;
+  const box = document.getElementById("res-" + index);
+  const mode = store.mode || "pretty";
+  const { html, isJson } = formatResponse(store.text, mode);
+  box.innerHTML = isJson ? html : escapeHtml(store.text);
+}
+
+function copyResponse(index) {
+  const store = responseStore[index];
+  if (!store) return;
+  copyText(store.text, "copy-res-btn-" + index);
+}
+
+// ==========================
+// API CALL
+// ==========================
+async function tryIt(index, method) {
   const path = document.getElementById("url-" + index).value;
   const token = document.getElementById("global-token").value;
+  const section = document.getElementById("res-section-" + index);
   const box = document.getElementById("res-" + index);
+  const pill = document.getElementById("status-pill-" + index);
+  const btn = document.getElementById("try-btn-" + index);
 
+  section.style.display = "block";
   box.className = "response-box";
-  box.textContent = "Sending...";
+  box.innerHTML = "Sending…";
+  pill.textContent = "";
+  btn.innerHTML = "&#9203; sending";
+  btn.disabled = true;
+
+  let bodyData = null;
+  if (method==="POST"||method==="PUT") {
+    const bodyEl = document.getElementById("request-body-" + index);
+    bodyData = bodyEl ? bodyEl.value.trim() : null;
+    if (!bodyData) {
+      box.className = "response-box error";
+      box.textContent = "Request body is required for " + method;
+      btn.innerHTML = "&#9654; send"; btn.disabled = false;
+      return;
+    }
+  }
 
   try {
     const res = await fetch(window.location.origin + path, {
       method,
-      headers: token ? { Authorization: "Bearer " + token } : {}
+      headers: {
+        ...(token ? { Authorization: "Bearer " + token } : {}),
+        ...(bodyData ? { "Content-Type": "application/json" } : {})
+      },
+      body: bodyData
     });
 
     const text = await res.text();
-    box.className = "response-box " + (res.ok ? "success" : "error");
-    box.textContent = "HTTP " + res.status + "\n\n" + text;
+    const ok = res.ok;
 
-  } catch (e) {
+    responseStore[index] = { text, mode: "pretty" };
+    box.className = "response-box " + (ok ? "success" : "error");
+    pill.textContent = "HTTP " + res.status;
+    pill.className = "status-pill " + (ok ? "ok" : "err");
+    renderResponseText(index);
+
+  } catch(e) {
+    responseStore[index] = { text: e.toString(), mode: "raw" };
     box.className = "response-box error";
     box.textContent = e.toString();
+    pill.textContent = "Error"; pill.className = "status-pill err";
   }
+
+  btn.innerHTML = "&#9654; send"; btn.disabled = false;
 }
 
-// =========================
+// ==========================
 renderFilters();
 renderRoutes();
-
 </script>
 </body>
 </html>

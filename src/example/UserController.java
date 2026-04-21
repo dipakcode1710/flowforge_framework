@@ -140,5 +140,10 @@ public class UserController {
         @QueryParam("page") int page
     ) {
         return "ID=" + id + ", Q=" + q + ", Page=" + page;
+    }  
+    
+    @Post("/create-user")
+    public String createUser(@RequestBody UserRequest req) {
+        return "Created: " + req.name + " (" + req.age + ")";
     }    
 }
