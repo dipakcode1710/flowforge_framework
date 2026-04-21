@@ -89,4 +89,56 @@ public class UserController {
     public String test() {
         return helper.getMessage();
     }
+    
+    @Get("/search")
+    public String search(
+        @QueryParam("name") String name,
+        @QueryParam("age") Integer age,
+        @QueryParam("city") String city
+    ) {
+        return "Name=" + name + ", Age=" + age + ", City=" + city;
+    } 
+    
+    @Get("/filter")
+    public String filter(
+        @QueryParam("category") String category,
+        @QueryParam(value="page", required=false) Integer page,
+        @QueryParam(value="size", required=false) Integer size
+    ) {
+        return "Category=" + category + ", Page=" + page + ", Size=" + size;
+    } 
+    
+    @Get("/user/{id}/orders")
+    public String orders(
+        @PathVariable("id") int id,
+        @QueryParam("status") String status,
+        @QueryParam("limit") int limit
+    ) {
+        return "User=" + id + ", Status=" + status + ", Limit=" + limit;
+    } 
+    
+    @Get("/validate")
+    public String validate(
+        @QueryParam("id") @Min(5) int id,
+        @QueryParam("name") @NotNull String name
+    ) {
+        return "Valid ID=" + id + ", Name=" + name;
+    } 
+    
+    @Get("/edge")
+    public String edge(
+        @QueryParam("a") String a,
+        @QueryParam("b") String b
+    ) {
+        return "A=" + a + ", B=" + b;
+    } 
+    
+    @Get("/combo")
+    public String combo(
+        @PathVariable("id") int id,
+        @QueryParam("q") String q,
+        @QueryParam("page") int page
+    ) {
+        return "ID=" + id + ", Q=" + q + ", Page=" + page;
+    }    
 }

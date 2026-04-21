@@ -307,16 +307,44 @@ public class Server {
         for (int i = 0; i < parameters.length; i++) {
 
             Parameter param = parameters[i];
-            Object value;
+            Object value = null;
 
+            // =========================
+            // 🔥 1. Query Param
+            // =========================
             if (param.isAnnotationPresent(QueryParam.class)) {
+
                 QueryParam qp = param.getAnnotation(QueryParam.class);
                 value = convert(queryParams.get(qp.value()), param.getType());
-            } else {
-                value = mapper.readValue(ctx.body, param.getType());
             }
 
+            // =========================
+            // 🔥 2. Path Variable (FIX)
+            // =========================
+            else if (param.isAnnotationPresent(PathVariable.class)) {
+
+                PathVariable pv = param.getAnnotation(PathVariable.class);
+                String pathVal = ctx.pathVars.get(pv.value());
+
+                value = convert(pathVal, param.getType());
+            }
+
+            // =========================
+            // 🔥 3. Request Body (SAFE)
+            // =========================
+            else {
+
+                // Only parse if body exists
+                if (ctx.body != null && !ctx.body.isEmpty()) {
+                    value = mapper.readValue(ctx.body, param.getType());
+                }
+            }
+
+            // =========================
+            // 🔥 Validation
+            // =========================
             Validator.validate(param, value);
+
             args[i] = value;
         }
 
