@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowForge API Docs</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8f8f7;color:#1a1a18;font-size:14px}
+
+.header{padding:20px 24px 14px;border-bottom:1px solid #e5e4df;display:flex;align-items:center;gap:12px;background:#fff}
+.logo{font-size:17px;font-weight:500}
+.badge{background:#e6f1fb;color:#185fa5;font-size:11px;padding:2px 8px;border-radius:20px}
+#route-count{font-size:12px;color:#aaa;margin-left:auto}
+
+.token-row{padding:12px 24px;display:flex;gap:10px;align-items:center;background:#fff;border-bottom:1px solid #e5e4df}
+.token-row label{font-size:12px;color:#888;min-width:90px}
+
+.filter-bar{padding:10px 24px;display:flex;gap:6px;background:#fff;border-bottom:1px solid #e5e4df}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer}
+.filter-btn.active{border-color:#888;color:#1a1a18;font-weight:500}
+
+.routes{padding:16px 24px;display:flex;flex-direction:column;gap:8px}
+
+.route-card{border:1px solid #e5e4df;border-radius:10px;background:#fff}
+.route-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer}
+.route-header:hover{background:#f5f5f3}
+
+.method{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;min-width:50px;text-align:center}
+.method.GET{background:#eaf3de;color:#3b6d11}
+.method.POST{background:#e6f1fb;color:#185fa5}
+.method.PUT{background:#faeeda;color:#854f0b}
+.method.DELETE{background:#fcebeb;color:#a32d2d}
+
+.path{font-family:monospace;font-size:13px;flex:1}
+.auth-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#faeeda;color:#854f0b}
+
+.route-body{display:none;border-top:1px solid #eee;padding:14px;background:#fafaf9}
+.route-body.open{display:block}
+
+.param-inputs{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
+.param-group{display:flex;align-items:center;gap:6px}
+.param-name{font-family:monospace;font-size:12px;color:#888}
+
+input[type=text]{padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-family:monospace;font-size:13px;color:#1a1a18;outline:none}
+input[type=text]:focus{border-color:#888}
+
+.try-row{display:flex;gap:8px}
+.try-btn{padding:6px 14px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;font-size:13px}
+.try-btn:hover{background:#f0f0ee}
+
+.response-box{margin-top:10px;padding:10px;border:1px solid #eee;border-radius:7px;font-family:monospace;font-size:12px;white-space:pre-wrap;color:#888}
+.response-box.success{border-color:#9fe1cb;color:#0f6e56;background:#e1f5ee}
+.response-box.error{border-color:#f7c1c1;color:#a32d2d;background:#fcebeb}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <span class="logo">FlowForge</span>
+  <span class="badge">API Docs</span>
+  <span id="route-count"></span>
+</div>
+
+<div class="token-row">
+  <label>Bearer token</label>
+  <input type="text" id="global-token" placeholder="paste JWT here..." style="flex:1" />
+</div>
+
+<div class="filter-bar" id="filters"></div>
+<div class="routes" id="routes-container"></div>
+
+<script>
+
+// =========================
+// LOAD ROUTES
+// Injected server-side as base64 to avoid any quote/escaping issues.
+// =========================
+const ROUTES = JSON.parse(atob('{{ROUTES_BASE64}}'));
+
+let activeFilter = "ALL";
+const methods = ["ALL", ...new Set(ROUTES.map(r => r.method))];
+
+// =========================
+// FILTER UI
+// =========================
+function renderFilters() {
+  document.getElementById("filters").innerHTML = methods.map(m =>
+    `<button class="filter-btn${m === activeFilter ? ' active' : ''}"
+      onclick="setFilter('${m}')">${m}</button>`
+  ).join("");
+}
+
+function setFilter(m) {
+  activeFilter = m;
+  renderFilters();
+  renderRoutes();
+}
+
+// =========================
+// URL BUILDER
+// Called via data-index attribute — no inline JSON in HTML attributes.
+// =========================
+function buildUrl(index) {
+  const route = ROUTES[index];
+  if (!route) return;
+
+  let url = route.path;
+  const queryParts = [];
+
+  route.params.forEach(p => {
+    const input = document.getElementById("param-" + index + "-" + p);
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return;
+
+    // Replace path variable e.g. {id}, otherwise treat as query param
+    const placeholder = "{" + p + "}";
+    if (url.includes(placeholder)) {
+      url = url.replace(placeholder, encodeURIComponent(val));
+    } else {
+      queryParts.push(p + "=" + encodeURIComponent(val));
+    }
+  });
+
+  if (queryParts.length) url += "?" + queryParts.join("&");
+
+  const urlInput = document.getElementById("url-" + index);
+  if (urlInput) urlInput.value = url;
+}
+
+// =========================
+// RENDER ROUTES
+// All event wiring is done in JS after innerHTML — zero inline JS in attributes.
+// =========================
+function renderRoutes() {
+
+  const filtered = ROUTES
+    .map((r, index) => ({ ...r, index }))
+    .filter(r => activeFilter === "ALL" || r.method === activeFilter);
+
+  document.getElementById("route-count").textContent =
+    filtered.length + " route" + (filtered.length !== 1 ? "s" : "");
+
+  document.getElementById("routes-container").innerHTML = filtered.map(r => `
+    <div class="route-card">
+      <div class="route-header" data-index="${r.index}">
+        <span class="method ${r.method}">${r.method}</span>
+        <span class="path">${r.path}</span>
+        ${r.auth ? '<span class="auth-badge">auth</span>' : ''}
+      </div>
+
+      <div class="route-body" id="body-${r.index}">
+
+        ${r.params && r.params.length ? `
+        <div class="param-inputs" id="params-${r.index}">
+          ${r.params.map(p => `
+            <div class="param-group">
+              <span class="param-name">${p}</span>
+              <input type="text"
+                id="param-${r.index}-${p}"
+                placeholder="${p}..."
+                data-index="${r.index}" />
+            </div>
+          `).join("")}
+        </div>` : ""}
+
+        <div class="try-row">
+          <input type="text" id="url-${r.index}" value="${r.path}" style="flex:1" />
+          <button class="try-btn" data-index="${r.index}" data-method="${r.method}">Try ↗</button>
+        </div>
+
+        <div class="response-box" id="res-${r.index}">response will appear here</div>
+
+      </div>
+    </div>
+  `).join("");
+
+  // Wire up events after render — no inline JS attributes needed
+  document.querySelectorAll(".route-header").forEach(el => {
+    el.addEventListener("click", () => {
+      const index = el.dataset.index;
+      document.getElementById("body-" + index).classList.toggle("open");
+    });
+  });
+
+  document.querySelectorAll(".param-inputs input").forEach(input => {
+    input.addEventListener("input", () => buildUrl(input.dataset.index));
+  });
+
+  document.querySelectorAll(".try-btn").forEach(btn => {
+    btn.addEventListener("click", () => tryIt(btn.dataset.index, btn.dataset.method));
+  });
+}
+
+// =========================
+// API CALL
+// =========================
+async function tryIt(index, method) {
+
+  const path = document.getElementById("url-" + index).value;
+  const token = document.getElementById("global-token").value;
+  const box = document.getElementById("res-" + index);
+
+  box.className = "response-box";
+  box.textContent = "Sending...";
+
+  try {
+    const res = await fetch(window.location.origin + path, {
+      method,
+      headers: token ? { Authorization: "Bearer " + token } : {}
+    });
+
+    const text = await res.text();
+    box.className = "response-box " + (res.ok ? "success" : "error");
+    box.textContent = "HTTP " + res.status + "\n\n" + text;
+
+  } catch (e) {
+    box.className = "response-box error";
+    box.textContent = e.toString();
+  }
+}
+
+// =========================
+renderFilters();
+renderRoutes();
+
+</script>
+</body>
+</html>
