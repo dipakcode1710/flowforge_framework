@@ -35,13 +35,17 @@ public class Server {
         public List<String> params;
         public boolean auth;
 
+        // 🔥 NEW
+        public String tag;
+
         public RouteInfo(String method, String path, String handler,
-                        List<String> params, boolean auth) {
+                         List<String> params, boolean auth, String tag) {
             this.method = method;
             this.path = path;
             this.handler = handler;
             this.params = params;
             this.auth = auth;
+            this.tag = tag;
         }
     }
 
@@ -72,30 +76,41 @@ public class Server {
         routeMethods.put(key, method);
         controllers.put(key, controller);
 
+        // params
         List<String> params = new ArrayList<>();
-
         for (Parameter p : method.getParameters()) {
 
             if (p.isAnnotationPresent(QueryParam.class)) {
-                QueryParam qp = p.getAnnotation(QueryParam.class);
-                params.add(qp.value());
+                params.add(p.getAnnotation(QueryParam.class).value());
             }
 
             if (p.isAnnotationPresent(PathVariable.class)) {
-                PathVariable pv = p.getAnnotation(PathVariable.class);
-                params.add(pv.value());
+                params.add(p.getAnnotation(PathVariable.class).value());
             }
         }
 
+        // auth
         boolean auth = method.isAnnotationPresent(Auth.class) ||
-                    controller.getClass().isAnnotationPresent(Auth.class);
+                       controller.getClass().isAnnotationPresent(Auth.class);
+
+        // 🔥 TAG RESOLUTION (method > class > default)
+        String tag = "default";
+
+        if (controller.getClass().isAnnotationPresent(Tag.class)) {
+            tag = controller.getClass().getAnnotation(Tag.class).value();
+        }
+
+        if (method.isAnnotationPresent(Tag.class)) {
+            tag = method.getAnnotation(Tag.class).value();
+        }
 
         routeList.add(new RouteInfo(
-                httpMethod,
-                path,
-                controller.getClass().getSimpleName() + "#" + method.getName(),
-                params,
-                auth
+            httpMethod,
+            path,
+            controller.getClass().getSimpleName() + "#" + method.getName(),
+            params,
+            auth,
+            tag   // 🔥 NEW
         ));
     }
 

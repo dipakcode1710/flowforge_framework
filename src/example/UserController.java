@@ -3,6 +3,7 @@ package example;
 import flowforge.core.annotations.*;
 
 @Auth
+@Tag("User APIs")
 @Controller
 public class UserController {
 	

@@ -88,6 +88,19 @@ textarea:focus{border-color:#888}
 .curl-box.open{display:block}
 
 .section-label{font-size:11px;color:#888;font-weight:500;margin-bottom:6px;margin-top:12px;text-transform:uppercase;letter-spacing:.05em}
+
+.tag-group{display:flex;flex-direction:column;gap:0;border:1px solid #e5e4df;border-radius:10px;background:#fff;overflow:hidden}
+.tag-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;user-select:none;background:#f5f5f3;border-bottom:1px solid #e5e4df}
+.tag-header:hover{background:#eeeeed}
+.tag-name{font-size:13px;font-weight:500;color:#444;transition:color .15s}
+.tag-count{font-size:11px;color:#aaa;background:#eaeae8;padding:1px 7px;border-radius:20px;margin-left:2px}
+.tag-chevron{font-size:10px;color:#bbb;transition:transform .2s}
+.tag-chevron.open{transform:rotate(90deg)}
+.tag-routes{display:flex;flex-direction:column;gap:8px;padding:10px}
+.tag-routes.collapsed{display:none}
+.filter-section{display:flex;flex-direction:column;gap:0}
+.filter-row{padding:8px 24px;display:flex;gap:6px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #e5e4df;align-items:center}
+.filter-row-label{font-size:11px;color:#bbb;min-width:44px}
 </style>
 </head>
 <body>
@@ -103,14 +116,20 @@ textarea:focus{border-color:#888}
   <input type="text" id="global-token" placeholder="paste JWT here..." style="flex:1" />
 </div>
 
-<div class="filter-bar" id="filters"></div>
+<div class="filter-section">
+  <div class="filter-row"><span class="filter-row-label">method</span><span id="filters-method"></span></div>
+  <div class="filter-row"><span class="filter-row-label">tag</span><span id="filters-tag"></span></div>
+</div>
 <div class="routes" id="routes-container"></div>
 
 <script>
 const ROUTES = JSON.parse(atob('{{ROUTES_BASE64}}'));
 
-let activeFilter = "ALL";
+let activeMethod = "ALL";
+let activeTag = "ALL";
 const methods = ["ALL", ...new Set(ROUTES.map(r => r.method))];
+const tags = ["ALL", ...new Set(ROUTES.map(r => r.tag || "General"))];
+const tagOpenState = {};
 
 // ==========================
 // JSON HIGHLIGHT + FORMAT
@@ -218,22 +237,45 @@ function updateCurlBox(index, method) {
 // FILTERS
 // ==========================
 function renderFilters() {
-  document.getElementById("filters").innerHTML = methods.map(m =>
-    `<button class="filter-btn${m===activeFilter?" active":""}" onclick="setFilter('${m}')">${m}</button>`
+  document.getElementById("filters-method").innerHTML = methods.map(m =>
+    `<button class="filter-btn${m===activeMethod?" active":""}" onclick="setMethodFilter('${m}')">${m}</button>`
+  ).join("");
+  document.getElementById("filters-tag").innerHTML = tags.map(t =>
+    `<button class="filter-btn${t===activeTag?" active":""}" onclick="setTagFilter('${t}')">${t}</button>`
   ).join("");
 }
-function setFilter(m) {
-  activeFilter = m; renderFilters(); renderRoutes();
-}
+function setMethodFilter(m) { activeMethod = m; renderFilters(); renderRoutes(); }
+function setTagFilter(t) { activeTag = t; renderFilters(); renderRoutes(); }
 
 // ==========================
 // RENDER ROUTES
 // ==========================
 function renderRoutes() {
-  const filtered = ROUTES.map((r,i) => ({...r, index:i})).filter(r => activeFilter==="ALL" || r.method===activeFilter);
+  const filtered = ROUTES
+    .map((r,i) => ({...r, index:i}))
+    .filter(r => (activeMethod==="ALL" || r.method===activeMethod) && (activeTag==="ALL" || (r.tag||"General")===activeTag));
+
   document.getElementById("route-count").textContent = filtered.length + " routes";
 
-  document.getElementById("routes-container").innerHTML = filtered.map(r => `
+  // group by tag
+  const groups = {};
+  filtered.forEach(r => {
+    const tag = r.tag || "General";
+    if (!groups[tag]) groups[tag] = [];
+    groups[tag].push(r);
+  });
+
+  document.getElementById("routes-container").innerHTML = Object.keys(groups).map(tag => {
+    const isOpen = tagOpenState[tag] !== false; // default open
+    return `
+    <div class="tag-group">
+      <div class="tag-header" onclick="toggleTagGroup('${tag}')">
+        <span class="tag-chevron${isOpen?" open":""}" id="tag-chev-${tag}">&#9654;</span>
+        <span class="tag-name">${tag}</span>
+        <span class="tag-count">${groups[tag].length}</span>
+      </div>
+      <div class="tag-routes${isOpen?"":" collapsed"}" id="tag-routes-${tag}">
+        ${groups[tag].map(r => `
     <div class="route-card">
       <div class="route-header" data-index="${r.index}">
         <span class="method ${r.method}">${r.method}</span>
@@ -293,9 +335,13 @@ function renderRoutes() {
 
       </div>
     </div>
-  `).join("");
+        `).join("")}
+      </div>
+    </div>
+    `;
+  }).join("");
 
-  // toggle open/close
+  // toggle route open/close
   document.querySelectorAll(".route-header").forEach(el => {
     el.addEventListener("click", () => {
       const i = el.dataset.index;
@@ -336,6 +382,12 @@ function renderRoutes() {
   document.querySelectorAll("[id^='try-btn-']").forEach(btn => {
     btn.addEventListener("click", () => tryIt(btn.dataset.index, btn.dataset.method));
   });
+}
+
+function toggleTagGroup(tag) {
+  tagOpenState[tag] = tagOpenState[tag] === false ? true : false;
+  document.getElementById("tag-routes-" + tag).classList.toggle("collapsed");
+  document.getElementById("tag-chev-" + tag).classList.toggle("open");
 }
 
 // ==========================
