@@ -1,9 +1,12 @@
 package flowforge.core.server;
 
 import flowforge.core.annotations.*;
+
 import flowforge.core.middleware.*;
 import flowforge.core.validation.Validator;
 import flowforge.core.config.Config;
+import flowforge.core.dev.OpenApiBuilder;
+
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
@@ -173,6 +176,22 @@ public class Server {
                 sendSafe(exchange, "Failed to load docs-ui.html: " + e.getMessage(), 500);
             }
         });
+        
+        server.createContext("/dev/openapi", exchange -> {
+
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            String json = OpenApiBuilder.build(routeList);
+
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, json.getBytes().length);
+
+            exchange.getResponseBody().write(json.getBytes());
+            exchange.close();
+        });        
 
         // =========================
         // MAIN ROUTER
