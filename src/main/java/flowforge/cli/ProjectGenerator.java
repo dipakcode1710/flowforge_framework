@@ -3,26 +3,41 @@ package flowforge.cli;
 import java.io.File;
 import java.io.FileWriter;
 
+/**
+ * The ProjectGenerator is responsible for scaffolding a new FlowForge project on disk.
+ *
+ * Generates a standard Maven project structure including source files, resources,
+ * and a pre-configured pom.xml ready to run with the FlowForge framework.
+ *
+ * @author Dipak Suryawanshi
+ * @since 1.0
+ */
 public class ProjectGenerator {
 
+    /**
+     * Generates a new FlowForge project in a directory named after the given project name.
+     *
+     * The generated project includes:
+     *   - A Maven source layout under src/main/java/example/
+     *   - AppMain.java         : the application entry point
+     *   - UserController.java  : a sample controller with GET and POST routes
+     *   - app.properties       : default server configuration
+     *   - pom.xml              : Maven build file with FlowForge, exec, and shade plugins
+     *
+     * @param name the name of the project and the root directory to create
+     */
     public static void generate(String name) {
 
         try {
-            // =========================
             // Root folder
-            // =========================
             File root = new File(name);
             root.mkdirs();
 
-            // =========================
             // Proper Maven structure
-            // =========================
             File javaDir = new File(root, "src/main/java/example");
             javaDir.mkdirs();
 
-            // =========================
             // AppMain.java
-            // =========================
             write(new File(javaDir, "AppMain.java"), """
             package example;
 
@@ -36,9 +51,7 @@ public class ProjectGenerator {
             }
             """);
 
-            // =========================
             // UserController.java
-            // =========================
             write(new File(javaDir, "UserController.java"), """
             package example;
 
@@ -49,7 +62,7 @@ public class ProjectGenerator {
 
                 @Get("/hello")
                 public String hello() {
-                    return "Hello FlowForge 🚀";
+                    return "Hello FlowForge";
                 }
 
                 @Post("/create")
@@ -59,9 +72,7 @@ public class ProjectGenerator {
             }
             """);
 
-            // =========================
             // app.properties
-            // =========================
             File resDir = new File(root, "src/main/resources");
             resDir.mkdirs();
 
@@ -70,9 +81,7 @@ public class ProjectGenerator {
             app.name=MyFlowForgeApp
             """);
 
-            // =========================
-            // pom.xml (🔥 KEY PART)
-            // =========================
+            // pom.xml
             write(new File(root, "pom.xml"), """
             		<project xmlns="http://maven.apache.org/POM/4.0.0"
             		         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -91,7 +100,7 @@ public class ProjectGenerator {
             		    </properties>
 
             		    <dependencies>
-            		        <!-- 🔥 FlowForge Framework -->
+            		        <!-- FlowForge Framework -->
             		        <dependency>
             		            <groupId>flowforge</groupId>
             		            <artifactId>flowforge-core</artifactId>
@@ -102,14 +111,14 @@ public class ProjectGenerator {
             		    <build>
             		        <plugins>
 
-            		            <!-- ✅ Compiler -->
+            		            <!-- Compiler -->
             		            <plugin>
             		                <groupId>org.apache.maven.plugins</groupId>
             		                <artifactId>maven-compiler-plugin</artifactId>
             		                <version>3.11.0</version>
             		            </plugin>
 
-            		            <!-- 🚀 Run app easily -->
+            		            <!-- Run app -->
             		            <plugin>
             		                <groupId>org.codehaus.mojo</groupId>
             		                <artifactId>exec-maven-plugin</artifactId>
@@ -119,7 +128,7 @@ public class ProjectGenerator {
             		                </configuration>
             		            </plugin>
 
-            		            <!-- 📦 Create fat jar -->
+            		            <!-- Fat jar -->
             		            <plugin>
             		                <groupId>org.apache.maven.plugins</groupId>
             		                <artifactId>maven-shade-plugin</artifactId>
@@ -140,13 +149,19 @@ public class ProjectGenerator {
             		</project>
             		""".formatted(name));
 
-            System.out.println("✅ Project created successfully: " + name);
+            System.out.println("Project created successfully: " + name);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Writes the given content to the specified file.
+     *
+     * @param file    the file to write to
+     * @param content the text content to write
+     */
     private static void write(File file, String content) {
         try (FileWriter fw = new FileWriter(file)) {
             fw.write(content);
