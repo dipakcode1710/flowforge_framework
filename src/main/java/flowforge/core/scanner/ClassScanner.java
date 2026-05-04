@@ -2,7 +2,10 @@ package flowforge.core.scanner;
 
 import java.io.File;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -42,30 +45,41 @@ public class ClassScanner {
         return classes;
     }
 
-    // 🔥 Scan file system
+    // 🔥 Scan file system (recursive)
     private static List<Class<?>> scanDirectory(URL resource, String packageName) {
 
         List<Class<?>> classes = new ArrayList<>();
 
         try {
             File directory = new File(resource.toURI());
-
-            for (File file : Objects.requireNonNull(directory.listFiles())) {
-
-                if (file.getName().endsWith(".class")) {
-
-                    String className = packageName + "."
-                            + file.getName().replace(".class", "");
-
-                    classes.add(Class.forName(className));
-                }
-            }
+            scanDirectoryRecursive(directory, packageName, classes);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         return classes;
+    }
+
+    private static void scanDirectoryRecursive(File directory, String packageName,
+                                               List<Class<?>> classes) {
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+
+            if (file.isDirectory()) {
+                scanDirectoryRecursive(file, packageName + "." + file.getName(), classes);
+
+            } else if (file.getName().endsWith(".class")) {
+
+                String className = packageName + "."
+                        + file.getName().replace(".class", "");
+
+                try {
+                    classes.add(Class.forName(className));
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     // 🔥 Scan JAR

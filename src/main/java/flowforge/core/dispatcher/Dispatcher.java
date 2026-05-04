@@ -5,7 +5,9 @@ import flowforge.core.server.Server;
 import flowforge.core.server.ExceptionManager;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Dispatcher {
@@ -38,7 +40,7 @@ public class Dispatcher {
                     continue;
                 }
 
-                Server.addRoute("GET", path, method, controller);
+                Server.addRoute("GET", path, method, controller, resolveMiddlewares(method));
                 registeredRoutes.add(key);
 
                 System.out.println("Mapped GET: " + path);
@@ -58,7 +60,7 @@ public class Dispatcher {
                     continue;
                 }
 
-                Server.addRoute("POST", path, method, controller);
+                Server.addRoute("POST", path, method, controller, resolveMiddlewares(method));
                 registeredRoutes.add(key);
 
                 System.out.println("Mapped POST: " + path);
@@ -85,5 +87,29 @@ public class Dispatcher {
     // 🔥 Optional reset (useful for dev reload)
     public static void clearRoutes() {
         registeredRoutes.clear();
+    }
+
+    // =========================
+    // Collect middleware classes from AOP annotations.
+    // Order: @Around first (wraps everything), then @Before, then @After.
+    // =========================
+    private static List<Class<?>> resolveMiddlewares(Method method) {
+        List<Class<?>> list = new ArrayList<>();
+
+        if (method.isAnnotationPresent(Around.class)) {
+            list.add(method.getAnnotation(Around.class).value());
+        }
+
+        if (method.isAnnotationPresent(Before.class)) {
+            Class<?> cls = method.getAnnotation(Before.class).value();
+            if (!list.contains(cls)) list.add(cls);
+        }
+
+        if (method.isAnnotationPresent(After.class)) {
+            Class<?> cls = method.getAnnotation(After.class).value();
+            if (!list.contains(cls)) list.add(cls);
+        }
+
+        return list;
     }
 }

@@ -24,6 +24,7 @@ public class Server {
 
     private static final Map<String, Method> routeMethods = new HashMap<>();
     private static final Map<String, Object> controllers = new HashMap<>();
+    private static final Map<String, List<Class<?>>> routeMiddlewares = new HashMap<>();
 
     // Dev dashboard
     private static final List<RouteInfo> routeList = new ArrayList<>();
@@ -72,12 +73,14 @@ public class Server {
     // =========================
     // Register route
     // =========================
-    public static void addRoute(String httpMethod, String path, Method method, Object controller) {
+    public static void addRoute(String httpMethod, String path, Method method, Object controller,
+                                List<Class<?>> middlewareClasses) {
 
         String key = httpMethod + ":" + path;
 
         routeMethods.put(key, method);
         controllers.put(key, controller);
+        routeMiddlewares.put(key, middlewareClasses);
 
         // params
         List<String> params = new ArrayList<>();
@@ -241,6 +244,19 @@ public class Server {
                 RequestContext ctx = new RequestContext(exchange, pathVars, requestBody);
 
                 List<Middleware> middlewareList = new ArrayList<>();
+
+                // AOP middleware (@Around, @Before, @After) — runs before auth
+                String routeKey2 = httpMethod + ":" + path;
+                for (String rk : routeMiddlewares.keySet()) {
+                    String[] parts2 = rk.split(":", 2);
+                    if (parts2[0].equals(httpMethod) && matchPath(parts2[1], path) != null) {
+                        routeKey2 = rk;
+                        break;
+                    }
+                }
+                for (Class<?> mwClass : routeMiddlewares.getOrDefault(routeKey2, List.of())) {
+                    middlewareList.add((Middleware) mwClass.getDeclaredConstructor().newInstance());
+                }
 
                 // Auth middleware
                 boolean authEnabled = Config.getBoolean("auth.enabled", true);

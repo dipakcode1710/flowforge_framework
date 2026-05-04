@@ -1,6 +1,19 @@
 package example;
 
-import flowforge.core.annotations.*;
+import flowforge.core.annotations.After;
+import flowforge.core.annotations.Around;
+import flowforge.core.annotations.Auth;
+import flowforge.core.annotations.Before;
+import flowforge.core.annotations.Controller;
+import flowforge.core.annotations.Get;
+import flowforge.core.annotations.Inject;
+import flowforge.core.annotations.Min;
+import flowforge.core.annotations.NotNull;
+import flowforge.core.annotations.PathVariable;
+import flowforge.core.annotations.Post;
+import flowforge.core.annotations.QueryParam;
+import flowforge.core.annotations.RequestBody;
+import flowforge.core.annotations.Tag;
 
 @Auth
 @Tag("User APIs")
@@ -27,20 +40,9 @@ public class UserController {
         return "User: " + id + ", Order: " + orderId;
     }*/
 	
-    //@Before(LogMiddleware.class)
-    //@Around(TimeMiddleware.class)
-    //@After(LogMiddleware.class)
-	/*
-    @Get("/test")
-    public String test() {
-        return "Middleware Working ";
-    }
-    @Get("/user")
-    public String getUser(@QueryParam(value="id", required=false) Integer id) {
-        return "User ID: " + id;
-    } 
-
-    */
+    @Before(LogMiddleware.class)
+    @Around(TimeMiddleware.class)
+    @After(LogMiddleware.class)
     @Auth
     @Get("/secure")
     public String secure() {
