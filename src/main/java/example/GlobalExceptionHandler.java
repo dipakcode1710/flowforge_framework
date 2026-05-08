@@ -6,11 +6,13 @@ import flowforge.core.server.ErrorResponse;
 @Controller
 public class GlobalExceptionHandler {
 
+    @ResponseStatus(500)
     @ExceptionHandler(RuntimeException.class)
     public ErrorResponse handleRuntime(RuntimeException e) {
         return new ErrorResponse("RUNTIME_ERROR", e.getMessage());
     }
 
+    @ResponseStatus(400)
     @ExceptionHandler(IllegalArgumentException.class)
     public ErrorResponse handleBadRequest(Exception e) {
         return new ErrorResponse("BAD_REQUEST", e.getMessage());

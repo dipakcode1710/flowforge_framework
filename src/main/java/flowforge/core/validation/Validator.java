@@ -8,11 +8,11 @@ public class Validator {
 
     public static void validate(Parameter param, Object value) {
 
-        // 🔥 Resolve proper parameter name
+        //  Resolve proper parameter name
         String name = resolveName(param);
 
         // =========================
-        // 🔥 NotNull
+        //  NotNull
         // =========================
         if (param.isAnnotationPresent(NotNull.class)) {
             if (value == null) {
@@ -21,7 +21,7 @@ public class Validator {
         }
 
         // =========================
-        // 🔥 Min
+        //  Min
         // =========================
         if (param.isAnnotationPresent(Min.class)) {
 
@@ -44,9 +44,34 @@ public class Validator {
                 }
             }
         }
+
+        // =========================
+        //  Max
+        // =========================
+        if (param.isAnnotationPresent(Max.class)) {
+
+            if (value != null) {
+                long maxValue = param.getAnnotation(Max.class).value();
+
+                try {
+                    long actual = Long.parseLong(value.toString());
+
+                    if (actual > maxValue) {
+                        throw new RuntimeException(
+                            "Parameter '" + name + "' must be <= " + maxValue
+                        );
+                    }
+
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(
+                        "Parameter '" + name + "' must be a valid number"
+                    );
+                }
+            }
+        }
     }
 
-    // 🔥 Resolve parameter name (IMPORTANT)
+    //  Resolve parameter name (IMPORTANT)
     private static String resolveName(Parameter param) {
 
         if (param.isAnnotationPresent(QueryParam.class)) {

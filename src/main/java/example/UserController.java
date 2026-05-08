@@ -1,6 +1,6 @@
 package example;
 
-import flowforge.core.annotations.After;
+import flowforge.core.annotations.*;
 import flowforge.core.annotations.Around;
 import flowforge.core.annotations.Auth;
 import flowforge.core.annotations.Before;
@@ -148,5 +148,13 @@ public class UserController {
     @Post("/create-user")
     public String createUser(@RequestBody UserRequest req) {
         return "Created: " + req.name + " (" + req.age + ")";
+    }  
+    
+    @Get("/test")
+    public String test(
+        @QueryParam("age") @Min(1) @Max(120) Integer age,
+        @QueryParam("page") @Min(1) @Max(100) Integer page
+    ) {
+        return "age=" + age + ", page=" + page;
     }    
 }

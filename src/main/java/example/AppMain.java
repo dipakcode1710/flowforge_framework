@@ -1,8 +1,10 @@
 package example;
 
 import flowforge.Flow;
+import flowforge.core.annotations.App;
 import flowforge.core.security.JwtUtil;
 
+@App
 public class AppMain {
 
     public static void main(String[] args) {

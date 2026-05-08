@@ -317,6 +317,13 @@ public class Server {
                             exchange.getResponseHeaders().add("Content-Type", "application/json");
                         }
 
+                        // 🔥 Read @ResponseStatus from handler method, default 500
+                        statusCode = handler.method.isAnnotationPresent(
+                                flowforge.core.annotations.ResponseStatus.class)
+                            ? handler.method.getAnnotation(
+                                flowforge.core.annotations.ResponseStatus.class).value()
+                            : 500;
+
                     } else {
 
                         response = mapper.writeValueAsString(
@@ -325,14 +332,14 @@ public class Server {
                                         "message", actual.getMessage()
                                 )
                         );
+                        statusCode = 500;
                     }
 
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     response = "Critical Error";
+                    statusCode = 500;
                 }
-
-                statusCode = 500;
             }
 
             sendSafe(exchange, response, statusCode);

@@ -38,6 +38,14 @@ public class Flow {
      * @param appClass the application class used to determine the base package for scanning
      */
     public static void run(Class<?> appClass) {
+
+        // 🔥 Enforce @App on the entry point class
+        if (!appClass.isAnnotationPresent(flowforge.core.annotations.App.class)) {
+            throw new IllegalArgumentException(
+                "Class '" + appClass.getName() + "' must be annotated with @App to run FlowForge."
+            );
+        }
+
         long startTime = System.currentTimeMillis();
         try {
             // 0. Banner

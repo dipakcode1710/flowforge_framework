@@ -28,8 +28,11 @@ public class OpenApiBuilder {
             for (String p : r.params) {
                 Map<String, Object> param = new HashMap<>();
                 param.put("name", p);
-                param.put("in", "query");
-                param.put("required", false);
+
+                //  Path variables use "in": "path", query params use "in": "query"
+                boolean isPathVar = r.path.contains("{" + p + "}");
+                param.put("in", isPathVar ? "path" : "query");
+                param.put("required", isPathVar);
                 param.put("schema", Map.of("type", "string"));
                 params.add(param);
             }
