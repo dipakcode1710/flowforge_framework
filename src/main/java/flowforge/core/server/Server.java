@@ -387,15 +387,21 @@ public class Server {
             }
 
             // =========================
-            // 🔥 RequestBody (NEW)
+            // 🔥 RequestBody
             // =========================
             else if (param.isAnnotationPresent(RequestBody.class)) {
 
-                if (ctx.body == null || ctx.body.isEmpty()) {
-                    throw new RuntimeException("Request body is required");
-                }
+                String httpMethod = ctx.exchange.getRequestMethod();
+                boolean bodyRequired = httpMethod.equals("POST") || httpMethod.equals("PUT");
 
-                value = mapper.readValue(ctx.body, param.getType());
+                if (ctx.body == null || ctx.body.isEmpty()) {
+                    if (bodyRequired) {
+                        throw new RuntimeException("Request body is required for " + httpMethod);
+                    }
+                    // DELETE / others: body is optional, leave value as null
+                } else {
+                    value = mapper.readValue(ctx.body, param.getType());
+                }
             }
 
             // =========================
