@@ -12,6 +12,9 @@ import flowforge.core.db.SchemaGenerator;
 import flowforge.core.dispatcher.Dispatcher;
 import flowforge.core.scanner.ClassScanner;
 import flowforge.core.server.Server;
+import flowforge.core.ui.FlowView;
+import flowforge.core.ui.UiRouter;
+import flowforge.core.ui.annotation.Page;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -73,6 +76,19 @@ public class Flow {
                 }
             }
 
+            // 1b. Register UI Pages (@Page views are not beans — instantiated per session)
+            int pageCount = 0;
+            for (Class<?> clazz : classes) {
+                if (clazz.isAnnotationPresent(Page.class) && FlowView.class.isAssignableFrom(clazz)) {
+                    String path = clazz.getAnnotation(Page.class).value();
+                    @SuppressWarnings("unchecked")
+                    Class<? extends FlowView> viewClass = (Class<? extends FlowView>) clazz;
+                    UiRouter.register(path, viewClass);
+                    pageCount++;
+                    System.out.println("UI Page Registered: " + clazz.getSimpleName() + " → " + path);
+                }
+            }
+
             // 2. Inject Dependencies
             for (Object bean : Context.getAllBeans().values()) {
                 Injector.inject(bean);
@@ -113,6 +129,7 @@ public class Flow {
             System.out.println("=================================");
             System.out.println("Beans Loaded     : " + beanCount);
             System.out.println("Controllers      : " + controllerCount);
+            System.out.println("UI Pages         : " + pageCount);
             System.out.println("Server Port      : " + port);
             System.out.println("Startup Time     : " + time + " ms");
             System.out.println("Docs UI          : http://localhost:" + port + "/dev/docs-ui");

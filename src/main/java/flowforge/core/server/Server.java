@@ -8,6 +8,8 @@ import flowforge.core.config.Config;
 import flowforge.core.dev.OpenApiBuilder;
 
 
+import flowforge.core.ui.UiServer;
+
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +21,7 @@ import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.Executors;
 
 public class Server {
 
@@ -126,6 +129,7 @@ public class Server {
     public static void start(int port) throws Exception {
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.setExecutor(Executors.newCachedThreadPool());
 
         // =========================
         // DEV DASHBOARD (IMPORTANT: BEFORE "/")
@@ -195,6 +199,11 @@ public class Server {
             exchange.getResponseBody().write(json.getBytes());
             exchange.close();
         });        
+
+        // =========================
+        // UI PAGES + SSE (BEFORE "/" catch-all)
+        // =========================
+        UiServer.register(server);
 
         // =========================
         // MAIN ROUTER
