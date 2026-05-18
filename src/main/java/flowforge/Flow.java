@@ -5,6 +5,10 @@ import flowforge.core.banner.Banner;
 import flowforge.core.config.Config;
 import flowforge.core.context.Context;
 import flowforge.core.context.Injector;
+import flowforge.core.db.ConnectionPool;
+import flowforge.core.db.DataSourceConfig;
+import flowforge.core.db.FlowRepository;
+import flowforge.core.db.SchemaGenerator;
 import flowforge.core.dispatcher.Dispatcher;
 import flowforge.core.scanner.ClassScanner;
 import flowforge.core.server.Server;
@@ -74,7 +78,20 @@ public class Flow {
                 Injector.inject(bean);
             }
 
-            // 3. Register Routes
+            // 3. Initialize Database (if datasource is configured)
+            DataSourceConfig dsConfig = DataSourceConfig.load();
+            if (dsConfig != null) {
+                int poolSize = Config.getInt("datasource.pool-size", 10);
+                ConnectionPool.init(dsConfig, poolSize);
+                System.out.println("[DB] Connected: " + dsConfig.url);
+                for (Object bean : Context.getAllBeans().values()) {
+                    if (bean instanceof FlowRepository<?, ?> repo) {
+                        SchemaGenerator.run(repo.entityClass, dsConfig.ddlAuto);
+                    }
+                }
+            }
+
+            // 4. Register Routes
             int controllerCount = 0;
             for (Object bean : Context.getAllBeans().values()) {
                 Class<?> clazz = bean.getClass();
@@ -85,11 +102,11 @@ public class Flow {
                 }
             }
 
-            // 4. Start Server
+            // 5. Start Server
             int port = Config.getInt("server.port", 8080);
             Server.start(port);
 
-            // 5. Startup Summary
+            // 6. Startup Summary
             long time = System.currentTimeMillis() - startTime;
             System.out.println("\n=================================");
             System.out.println("FlowForge Started Successfully");
@@ -120,6 +137,7 @@ public class Flow {
         return clazz.isAnnotationPresent(flowforge.core.annotations.Component.class) ||
                clazz.isAnnotationPresent(flowforge.core.annotations.Service.class) ||
                clazz.isAnnotationPresent(flowforge.core.annotations.Controller.class) ||
-               clazz.isAnnotationPresent(flowforge.core.annotations.ConfigurationProperties.class);
+               clazz.isAnnotationPresent(flowforge.core.annotations.ConfigurationProperties.class) ||
+               clazz.isAnnotationPresent(flowforge.core.annotations.Repository.class);
     }
 }
